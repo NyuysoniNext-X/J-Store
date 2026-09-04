@@ -1,0 +1,424 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  ShieldCheck,
+  Truck,
+  Sparkles,
+  Star,
+  GraduationCap,
+  BookOpen,
+  Backpack,
+  Calculator,
+  Utensils,
+  Smartphone,
+  Laptop,
+  Shirt,
+  Home as HomeIcon,
+  ShoppingBag,
+  Gift,
+} from "lucide-react";
+import heroImg from "@/assets/hero.jpg";
+import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/shop/ProductCard";
+import { fetchProducts } from "@/lib/queries";
+import type { Product } from "@/lib/mock-data";
+import { useI18n } from "@/lib/i18n";
+
+export const Route = createFileRoute("/")({
+  component: Home,
+  loader: async () => {
+    return fetchProducts();
+  },
+  head: () => ({
+    meta: [
+      { title: "J-STORE.cm — Your Next Trusted Purchase" },
+      {
+        name: "description",
+        content:
+          "Discover premium products from verified African sellers. Pay with MoMo, Orange Money or card. Shipped from Douala.",
+      },
+    ],
+  }),
+});
+
+// Horizontal scrollable categories — icons replace emojis
+const SCROLL_CATEGORIES = [
+  { slug: "fashion", name: "Fashion", icon: Shirt },
+  { slug: "electronics", name: "Electronics", icon: Smartphone },
+  { slug: "school", name: "School", icon: GraduationCap },
+  { slug: "home", name: "Home & Living", icon: HomeIcon },
+  { slug: "beauty", name: "Beauty", icon: Sparkles },
+  { slug: "sports", name: "Sports", icon: ShoppingBag },
+  { slug: "accessories", name: "Accessories", icon: Gift },
+  { slug: "electronics", name: "Phones & Tablets", icon: Laptop },
+  { slug: "home", name: "Food & Kitchen", icon: Utensils },
+] as const;
+
+function Home() {
+  const { t } = useI18n();
+  const PRODUCTS = Route.useLoaderData();
+  // Same placeholder slicing as before mock-data — there's no real
+  // "trending"/"bestseller" ranking in the schema yet (no sales-count or
+  // view-count-based ordering wired up), so this stays arbitrary until a
+  // later phase adds real signals to rank by.
+  const featured = PRODUCTS.slice(0, 8);
+  const trending = PRODUCTS.slice(8, 16);
+  const newArrivals = PRODUCTS.slice(4, 12);
+  const bestSellers = PRODUCTS.slice(2, 10);
+  const schoolProducts = PRODUCTS.filter((p) => p.category === "School").slice(0, 8);
+
+  return (
+    <div>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-secondary/70 via-secondary/20 to-transparent">
+        <div className="mx-auto max-w-[1536px] px-6 pt-12 pb-16 md:pt-20 md:pb-28 grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
+            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gold font-semibold">
+              <Sparkles className="h-3.5 w-3.5" /> {t("hero.eyebrow")}
+            </span>
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
+              Your next <span className="text-gradient-gold">trusted</span> purchase, delivered.
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-xl">{t("hero.sub")}</p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-emerald text-emerald-foreground hover:bg-gold hover:text-gold-foreground h-12 px-7"
+              >
+                <Link to="/shop">
+                  {t("hero.cta")} <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full h-12 px-7 border-navy/20 hover:bg-secondary"
+              >
+                <Link to="/seller/register">{t("hero.cta2")}</Link>
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-6 pt-4 text-sm">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-gold" /> Verified sellers
+              </div>
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-gold" /> Same-day in Douala
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-gold fill-gold" /> 4.9 customer rating
+              </div>
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="relative"
+          >
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-elegant">
+              <img
+                src={heroImg}
+                alt="Premium shopping experience"
+                className="w-full h-full object-cover"
+                width={1536}
+                height={1024}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy/40 via-transparent to-transparent" />
+            </div>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="absolute left-2 sm:-left-4 bottom-10 bg-card rounded-2xl shadow-elegant p-4 flex items-center gap-3 max-w-[200px] sm:max-w-[230px]"
+            >
+              <div className="h-10 w-10 rounded-full bg-gradient-gold flex items-center justify-center text-gold-foreground font-bold">
+                ★
+              </div>
+              <div>
+                <p className="text-sm font-semibold">12 400+ orders</p>
+                <p className="text-xs text-muted-foreground">delivered this month</p>
+              </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+              className="absolute right-2 sm:-right-4 top-10 bg-navy text-navy-foreground rounded-2xl shadow-gold p-4 max-w-[200px] sm:max-w-[220px]"
+            >
+              <p className="text-xs uppercase tracking-wider text-gold">Pay your way</p>
+              <p className="text-sm font-semibold mt-1">MoMo · Orange · Visa</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Categories: horizontal scrollable row ── */}
+      <section className="mx-auto max-w-[1536px] px-6 py-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl md:text-2xl font-bold">Shop by Category</h2>
+          <Link
+            to="/shop"
+            className="text-sm text-gold hover:underline flex items-center gap-1 shrink-0"
+          >
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        {/* scrollbar hidden via inline style; Tailwind v4 doesn't expose scrollbar-width as utility */}
+        <div
+          className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {SCROLL_CATEGORIES.map((cat, i) => {
+            const Icon = cat.icon;
+            return (
+              <Link
+                key={`${cat.slug}-${i}`}
+                to="/shop"
+                search={{ category: cat.slug }}
+                className="flex-shrink-0 w-24 sm:w-28 md:w-32 group snap-start"
+              >
+                <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 md:p-4 hover:shadow-elegant hover:border-gold/40 transition-all">
+                  <div className="h-11 w-11 md:h-12 md:w-12 rounded-full bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 group-hover:scale-110 transition-all">
+                    <Icon className="h-5 w-5 md:h-6 md:w-6 text-gold" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-[11px] md:text-xs font-medium text-center leading-tight">
+                    {cat.name}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <ProductSection
+        title={t("section.featured")}
+        subtitle="Hand-picked premium goods"
+        products={featured}
+      />
+
+      {/* Back to School — Rentrée scolaire */}
+      <section className="mx-auto max-w-[1536px] px-6 my-12">
+        <div className="rounded-3xl bg-gradient-to-br from-gold/15 via-card to-navy/5 border border-gold/20 p-8 md:p-12 overflow-hidden relative">
+          <div className="absolute -right-16 -bottom-16 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
+          <div className="absolute -left-10 -top-10 h-48 w-48 rounded-full bg-navy/10 blur-3xl" />
+          <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-3">
+                <GraduationCap className="h-4 w-4" /> Rentrée scolaire · Septembre
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-bold leading-tight">
+                Tout pour la <span className="text-gradient-gold">rentrée scolaire</span> 2026
+              </h2>
+              <p className="text-muted-foreground mt-3 max-w-lg">
+                Cahiers, sacs, uniformes, calculatrices et manuels — préparez la rentrée de vos
+                enfants avec les meilleures fournitures, livrées partout au Cameroun.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-6">
+                <Button
+                  asChild
+                  size="lg"
+                  className="rounded-full bg-emerald text-emerald-foreground hover:bg-gold hover:text-gold-foreground h-12 px-7"
+                >
+                  <Link to="/shop" search={{ category: "school" }}>
+                    Shop school supplies <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full h-12 px-7 border-gold/30 hover:bg-gold/10"
+                >
+                  <Link to="/shop" search={{ category: "school", sort: "price-asc" }}>
+                    Best prices
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">
+                {[
+                  { icon: BookOpen, label: "Cahiers & manuels" },
+                  { icon: Backpack, label: "Sacs & cartables" },
+                  { icon: Calculator, label: "Calculatrices" },
+                  { icon: GraduationCap, label: "Uniformes" },
+                ].map((f, i) => (
+                  <div
+                    key={i}
+                    className="bg-card/80 backdrop-blur border border-border rounded-xl p-3 text-center"
+                  >
+                    <f.icon className="h-5 w-5 text-gold mx-auto mb-1.5" />
+                    <p className="text-xs font-medium">{f.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {schoolProducts.slice(0, 4).map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  <ProductCard product={p} index={i} />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <ProductSection
+        title="School essentials · Rentrée"
+        subtitle="Get your kids ready for September"
+        products={schoolProducts}
+        tint
+      />
+
+      <ProductSection
+        title={t("section.trending")}
+        subtitle="What everyone is buying right now"
+        products={trending}
+        tint
+      />
+      <ProductSection
+        title={t("section.new")}
+        subtitle="Fresh drops from our sellers"
+        products={newArrivals}
+      />
+      <ProductSection
+        title={t("section.best")}
+        subtitle="Tried, loved and recommended"
+        products={bestSellers}
+      />
+
+      {/* Testimonials */}
+      <section className="bg-secondary/40 border-y border-border">
+        <div className="mx-auto max-w-[1536px] px-6 py-16">
+          <div className="text-center mb-10">
+            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-2">
+              Loved across Cameroon
+            </p>
+            <h2 className="font-display text-4xl font-bold">A community of trusted shoppers</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Aïcha M.",
+                city: "Douala",
+                text: "Fastest delivery in the city. My order arrived in 4 hours and the packaging felt luxurious.",
+              },
+              {
+                name: "Yannick K.",
+                city: "Yaoundé",
+                text: "I pay with MoMo and never worry. J-STORE has become my go-to for everything.",
+              },
+              {
+                name: "Linda T.",
+                city: "Bafoussam",
+                text: "As a seller, the dashboard is beautiful and the support team actually picks up.",
+              },
+            ].map((r, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-card border border-border rounded-2xl p-6 shadow-elegant"
+              >
+                <div className="flex gap-1 mb-3">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Star key={j} className="h-4 w-4 fill-gold text-gold" />
+                  ))}
+                </div>
+                <p className="text-sm leading-relaxed mb-4">"{r.text}"</p>
+                <p className="text-sm font-semibold">
+                  {r.name} <span className="font-normal text-muted-foreground">· {r.city}</span>
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="mx-auto max-w-4xl px-6 py-16">
+        <div className="rounded-3xl border border-border bg-card p-10 text-center">
+          <h3 className="font-display text-3xl font-bold">Get 10% off your first order</h3>
+          <p className="text-muted-foreground mt-2">
+            Subscribe for early access to new drops and marketplace updates.
+          </p>
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+          >
+            <input
+              type="email"
+              required
+              placeholder="your@email.com"
+              className="flex-1 h-12 rounded-full px-5 bg-secondary border border-transparent focus:outline-none focus:border-gold"
+            />
+            <Button
+              type="submit"
+              className="rounded-full h-12 px-7 bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
+            >
+              Subscribe
+            </Button>
+          </form>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ProductSection({
+  title,
+  subtitle,
+  products,
+  tint,
+}: {
+  title: string;
+  subtitle: string;
+  products: Product[];
+  tint?: boolean;
+}) {
+  return (
+    <section className={tint ? "bg-secondary/40 border-y border-border" : undefined}>
+      <div className="mx-auto max-w-[1536px] px-6 py-10">
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h2 className="font-display text-3xl md:text-4xl font-bold">{title}</h2>
+            <p className="text-muted-foreground mt-1">{subtitle}</p>
+          </div>
+          <Link
+            to="/shop"
+            className="text-sm font-medium text-gold hover:underline hidden md:inline-flex items-center gap-1"
+          >
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {products.map((p, i) => (
+            <ProductCard key={p.id} product={p} index={i} />
+          ))}
+        </div>
+        <Link
+          to="/shop"
+          className="text-sm font-medium text-gold hover:underline mt-5 inline-flex md:hidden items-center gap-1"
+        >
+          View all <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
