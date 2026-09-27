@@ -2,51 +2,78 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { usersService } from "./users";
 
-type Order = Tables<"orders">;
-type DeliveryApplication = Tables<"delivery_applications">;
+type DeliveryStatus = Tables<"deliveries">["status"];
+type DeliveryEvidence = Pick<
+  TablesUpdate<"deliveries">,
+  "proof_photo_url" | "customer_signature_url"
+>;
 
 export const deliveryService = {
   async listActiveOrders() {
     const { data, error } = await supabase
-      .from("orders")
-      .select("id,address,city,phone,total,status,delivery_status,rider_id,created_at")
-      .in("delivery_status", ["unassigned", "assigned", "picked_up", "out_for_delivery"])
+      .from("deliveries")
+      .select("*, order:orders(id,delivery_address,phone,total,status,created_at)")
+      .in("status", ["unassigned", "assigned", "picked_up", "in_transit"])
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as Pick<
-      Order,
-      | "id"
-      | "address"
-      | "city"
-      | "phone"
-      | "total"
-      | "status"
-      | "delivery_status"
-      | "rider_id"
-      | "created_at"
-    >[];
+    return data;
   },
 
   async claimOrder(orderId: string, riderId: string) {
-    const { error } = await supabase
-      .from("orders")
-      .update({ rider_id: riderId, delivery_status: "assigned" })
-      .eq("id", orderId);
+    const { data: personnel, error: personnelError } = await supabase
+      .from("delivery_personnel")
+      .select("id,is_approved")
+      .eq("user_id", riderId)
+      .maybeSingle();
+    if (personnelError) throw personnelError;
+    if (!personnel?.is_approved) throw new Error("An approved delivery profile is required.");
+
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update({
+        delivery_personnel_id: personnel.id,
+        status: "assigned",
+        assigned_at: new Date().toISOString(),
+      })
+      .eq("order_id", orderId)
+      .eq("status", "unassigned")
+      .is("delivery_personnel_id", null)
+      .select("id")
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error("Delivery is unavailable or access was denied.");
   },
 
-  async updateDeliveryStatus(orderId: string, status: string, extra?: Record<string, string>) {
-    const patch: TablesUpdate<"orders"> = {
-      delivery_status: status,
-      updated_at: new Date().toISOString(),
-      ...extra,
+  async updateDeliveryStatus(
+    orderId: string,
+    status: Exclude<DeliveryStatus, "unassigned" | "assigned">,
+    evidence?: DeliveryEvidence,
+  ) {
+    const now = new Date().toISOString();
+    const patch: TablesUpdate<"deliveries"> = {
+      proof_photo_url: evidence?.proof_photo_url,
+      customer_signature_url: evidence?.customer_signature_url,
+      status,
+      updated_at: now,
+      ...(status === "picked_up" ? { picked_up_at: now } : {}),
+      ...(status === "delivered" ? { delivered_at: now } : {}),
     };
-    if (status === "delivered") {
-      patch.status = "delivered";
-      patch.awaiting_buyer_confirm = true;
-    }
-    const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+    const previousStatuses: Record<typeof status, DeliveryStatus[]> = {
+      picked_up: ["assigned"],
+      in_transit: ["picked_up"],
+      delivered: ["picked_up", "in_transit"],
+      failed: ["assigned", "picked_up", "in_transit"],
+    };
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update(patch)
+      .eq("order_id", orderId)
+      .in("status", previousStatuses[status])
+      .not("delivery_personnel_id", "is", null)
+      .select("id")
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error("Delivery status changed or access was denied.");
   },
 
   async submitApplication(payload: TablesInsert<"delivery_applications">) {
@@ -56,7 +83,7 @@ export const deliveryService = {
       .select()
       .single();
     if (error) throw error;
-    return data as DeliveryApplication;
+    return data;
   },
 
   async listApplications() {
@@ -65,24 +92,19 @@ export const deliveryService = {
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as DeliveryApplication[];
+    return data;
   },
 
   async reviewApplication(appId: string, reviewerId: string, status: "approved" | "rejected") {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("delivery_applications")
       .update({ status, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
-      .eq("id", appId);
+      .eq("id", appId)
+      .select("user_id")
+      .single();
     if (error) throw error;
     if (status === "approved") {
-      const app = await supabase
-        .from("delivery_applications")
-        .select("user_id")
-        .eq("id", appId)
-        .single();
-      if (app.data) {
-        await usersService.grantRole(app.data.user_id, "delivery");
-      }
+      await usersService.grantRole(data.user_id, "delivery");
     }
   },
 };

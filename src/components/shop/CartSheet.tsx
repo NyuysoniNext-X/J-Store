@@ -12,22 +12,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/store";
-import { formatXAF, PRODUCTS, type Product } from "@/lib/mock-data";
+import { useProducts } from "@/lib/queries";
+import { formatXAF, type Product } from "@/lib/mock-data";
 
 export function CartSheet({ trigger }: { trigger: ReactNode }) {
   const rawItems = useCart((s) => s.items);
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
+  const { data: allProducts = [] } = useProducts();
 
   const items = useMemo(
     () =>
       rawItems
         .map((i) => {
-          const product = PRODUCTS.find((p) => p.id === i.id);
+          const product = allProducts.find((p) => p.id === i.id);
           return product ? { product, qty: i.qty } : null;
         })
         .filter(Boolean) as Array<{ product: Product; qty: number }>,
-    [rawItems],
+    [rawItems, allProducts],
   );
   const subtotal = useMemo(
     () => items.reduce((sum, { product, qty }) => sum + product.price * qty, 0),

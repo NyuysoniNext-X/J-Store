@@ -41,8 +41,7 @@ export function Footer() {
             links: [
               ["Become a seller", "/seller/register"],
               ["Seller dashboard", "/seller/dashboard"],
-              ["Resources", "/help"],
-              ["Fees", "/help"],
+              ["Seller agreement", "/legal/seller-agreement"],
             ],
           },
           {
@@ -51,7 +50,6 @@ export function Footer() {
               ["Deliver with us", "/delivery/apply"],
               ["Delivery company", "/delivery/company"],
               ["Delivery dashboard", "/delivery/dashboard"],
-              ["Requirements", "/help"],
             ],
           },
           {
@@ -59,7 +57,7 @@ export function Footer() {
             links: [
               ["Help center", "/help"],
               ["Track order", "/orders"],
-              ["Returns", "/help"],
+              ["COD Policy", "/legal/cod-policy"],
               ["Contact", "/help"],
             ],
           },
@@ -82,11 +80,14 @@ export function Footer() {
         <div className="mx-auto max-w-[1536px] px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-navy-foreground/60">
           <p>© {new Date().getFullYear()} J-STORE.cm — Your Next Trusted Purchase</p>
           <div className="flex gap-6">
-            <Link to="/" className="hover:text-gold">
+            <Link to="/legal/privacy" className="hover:text-gold">
               Privacy
             </Link>
-            <Link to="/" className="hover:text-gold">
+            <Link to="/legal/terms" className="hover:text-gold">
               Terms
+            </Link>
+            <Link to="/legal/marketplace-rules" className="hover:text-gold">
+              Rules
             </Link>
             <span className="text-gold">MTN MoMo · Orange Money · Visa · Mastercard</span>
           </div>

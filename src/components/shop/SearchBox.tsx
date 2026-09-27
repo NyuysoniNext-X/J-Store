@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Search as SearchIcon, X } from "lucide-react";
-import { PRODUCTS } from "@/lib/mock-data";
+import { useProducts } from "@/lib/queries";
 import { useI18n } from "@/lib/i18n";
 
 type ShopSearch = { q?: string };
@@ -21,6 +21,7 @@ export function SearchBox({
   const [value, setValue] = useState(currentSearch?.q ?? "");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { data: allProducts = [] } = useProducts();
 
   // Keep the box in sync if the URL's ?q= changes from elsewhere (back/forward nav).
   useEffect(() => {
@@ -40,13 +41,13 @@ export function SearchBox({
   const suggestions = useMemo(() => {
     const q = value.trim().toLowerCase();
     if (!q) return [];
-    return PRODUCTS.filter(
+    return allProducts.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
         p.seller.toLowerCase().includes(q),
     ).slice(0, 5);
-  }, [value]);
+  }, [value, allProducts]);
 
   function goToShop(q: string) {
     navigate({ to: "/shop", search: { q: q || undefined } });

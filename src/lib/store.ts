@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { PRODUCTS, type Product } from "./mock-data";
+import { type Product } from "./mock-data";
+import { useProducts } from "./queries";
 
 type CartItem = { id: string; qty: number };
 
@@ -12,8 +13,6 @@ type CartState = {
   setQty: (id: string, qty: number) => void;
   clear: () => void;
   count: () => number;
-  detailed: () => Array<{ product: Product; qty: number }>;
-  subtotal: () => number;
 };
 
 export const useCart = create<CartState>()(
@@ -34,34 +33,28 @@ export const useCart = create<CartState>()(
         })),
       clear: () => set({ items: [] }),
       count: () => get().items.reduce((n, i) => n + i.qty, 0),
-      detailed: () =>
-        get()
-          .items.map((i) => {
-            const product = PRODUCTS.find((p) => p.id === i.id);
-            return product ? { product, qty: i.qty } : null;
-          })
-          .filter(Boolean) as Array<{ product: Product; qty: number }>,
-      subtotal: () =>
-        get().items.reduce((sum, i) => {
-          const p = PRODUCTS.find((p) => p.id === i.id);
-          return sum + (p ? p.price * i.qty : 0);
-        }, 0),
     }),
     { name: "jstore.cart" },
   ),
 );
 
+// Cart items only hold {id, qty} — product details (price, name, image,
+// stock) always come fresh from the live product list, never from a
+// snapshot, so a price change or a product going out of stock/unapproved
+// is reflected immediately rather than trusting whatever was true when the
+// item was added to the cart.
 function useCartDetailed(): Array<{ product: Product; qty: number }> {
-  const items = useCart((s) => s.items);
+  const rawItems = useCart((s) => s.items);
+  const { data: allProducts = [] } = useProducts();
   return useMemo(
     () =>
-      items
+      rawItems
         .map((i) => {
-          const product = PRODUCTS.find((p) => p.id === i.id);
+          const product = allProducts.find((p) => p.id === i.id);
           return product ? { product, qty: i.qty } : null;
         })
         .filter(Boolean) as Array<{ product: Product; qty: number }>,
-    [items],
+    [rawItems, allProducts],
   );
 }
 

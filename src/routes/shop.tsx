@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { fetchCategories, fetchProducts, useCategories } from "@/lib/queries";
+import { fetchCategories, fetchProducts, useCategories, fetchActiveBoosts, buildBoostMap } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
+import { BOOST_TIER_ORDER, type SellerBoostTier } from "@/lib/types";
+import type { Product } from "@/lib/mock-data";
 
 type Search = { category?: string; sort?: string; q?: string };
 
@@ -15,8 +17,12 @@ export const Route = createFileRoute("/shop")({
     q: typeof s.q === "string" ? s.q : undefined,
   }),
   loader: async () => {
-    const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
-    return { products, categories };
+    const [products, categories, boosts] = await Promise.all([
+      fetchProducts(),
+      fetchCategories(),
+      fetchActiveBoosts(),
+    ]);
+    return { products, categories, boosts };
   },
   head: () => ({
     meta: [
@@ -36,15 +42,24 @@ const SORTS = [
   { id: "rating", label: "Top rated" },
 ];
 
+type ProductWithBoost = Product & { boostTier?: SellerBoostTier };
+
 function ShopPage() {
   const search = Route.useSearch();
   const nav = Route.useNavigate();
-  const { products, categories: CATEGORIES } = Route.useLoaderData();
+  const { products, categories: CATEGORIES, boosts } = Route.useLoaderData();
   const [maxPrice, setMaxPrice] = useState(100_000);
   const [openMobile, setOpenMobile] = useState(false);
 
+  const boostMap = useMemo(() => buildBoostMap(boosts), [boosts]);
+
   const filtered = useMemo(() => {
-    let list = [...products];
+    // Enrich products with boost tier (mock products have no seller_id, so default to 'normal')
+    let list: ProductWithBoost[] = products.map((p) => ({
+      ...p,
+      boostTier: (boostMap.get(p.id) ?? "normal") as SellerBoostTier,
+    }));
+
     if (search.q) {
       const q = search.q.trim().toLowerCase();
       list = list.filter(
@@ -57,12 +72,25 @@ function ShopPage() {
     }
     if (search.category) list = list.filter((p) => p.category.toLowerCase() === search.category);
     list = list.filter((p) => p.price <= maxPrice);
+
     const sort = search.sort ?? "featured";
-    if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
-    if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
+    if (sort === "featured") {
+      // Sort by boost tier first, then by rating
+      list.sort((a, b) => {
+        const orderA = BOOST_TIER_ORDER[a.boostTier ?? "normal"];
+        const orderB = BOOST_TIER_ORDER[b.boostTier ?? "normal"];
+        if (orderA !== orderB) return orderA - orderB;
+        return b.rating - a.rating;
+      });
+    } else if (sort === "price-asc") {
+      list.sort((a, b) => a.price - b.price);
+    } else if (sort === "price-desc") {
+      list.sort((a, b) => b.price - a.price);
+    } else if (sort === "rating") {
+      list.sort((a, b) => b.rating - a.rating);
+    }
     return list;
-  }, [products, search.q, search.category, search.sort, maxPrice]);
+  }, [products, search.q, search.category, search.sort, maxPrice, boostMap]);
 
   const Sidebar = (
     <aside className="space-y-8 text-sm">
@@ -180,7 +208,7 @@ function ShopPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {filtered.map((p, i) => (
-                <ProductCard key={p.id} product={p} index={i} />
+                <ProductCard key={p.id} product={p} index={i} boostTier={p.boostTier} />
               ))}
             </div>
           )}

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/_seller")({
 function SellerLayout() {
   const { hasRole } = useAuth();
 
-  if (!hasRole("seller") && !hasRole("admin")) {
+  if (!hasRole("seller") && !hasRole("admin") && !hasRole("super_admin")) {
     return (
       <div className="mx-auto max-w-md text-center py-20 px-6">
         <ShieldAlert className="h-12 w-12 text-gold mx-auto mb-4" />

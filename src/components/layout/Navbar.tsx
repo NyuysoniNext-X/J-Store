@@ -34,7 +34,7 @@ import { useCart, useWishlist } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import { CATEGORIES } from "@/lib/mock-data";
+import { useCategories } from "@/lib/queries";
 import { CartSheet } from "@/components/shop/CartSheet";
 import { SearchBox } from "@/components/shop/SearchBox";
 
@@ -45,6 +45,7 @@ export function Navbar() {
   const { lang, setLang, t } = useI18n();
   const { user, isAuthenticated, roles, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: categories = [] } = useCategories();
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
@@ -157,6 +158,11 @@ export function Navbar() {
                         <Package className="h-4 w-4 mr-2" /> My products
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/seller/wallet">
+                        <ShoppingCart className="h-4 w-4 mr-2" /> My wallet
+                      </Link>
+                    </DropdownMenuItem>
                   </>
                 )}
                 {roles.includes("delivery") && (
@@ -167,18 +173,47 @@ export function Navbar() {
                   </DropdownMenuItem>
                 )}
                 {(roles.includes("admin") || roles.includes("super_admin")) && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin/dashboard">
-                      <Shield className="h-4 w-4 mr-2" /> Admin dashboard
-                    </Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/dashboard">
+                        <Shield className="h-4 w-4 mr-2" /> Admin dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/seller-applications">
+                        <Store className="h-4 w-4 mr-2" /> Seller applications
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/products">
+                        <Package className="h-4 w-4 mr-2" /> Product approvals
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/payments">
+                        <Package className="h-4 w-4 mr-2" /> Payment verifications
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/withdrawals">
+                        <Package className="h-4 w-4 mr-2" /> Withdrawals
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {roles.includes("super_admin") && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/super-admin/dashboard">
-                      <Crown className="h-4 w-4 mr-2" /> Super admin
-                    </Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/seller-boosts">
+                        <Package className="h-4 w-4 mr-2" /> Seller boosts
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/super-admin/dashboard">
+                        <Crown className="h-4 w-4 mr-2" /> Super admin
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void signOut()}>
@@ -199,7 +234,7 @@ export function Navbar() {
           <Link to="/shop" className="font-medium hover:text-gold transition-colors">
             All
           </Link>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Link
               key={c.slug}
               to="/shop"
@@ -232,7 +267,7 @@ export function Navbar() {
               >
                 Shop all
               </Link>
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <Link
                   key={c.slug}
                   to="/shop"
@@ -262,13 +297,22 @@ export function Navbar() {
                     <ShoppingCart className="h-4 w-4" /> My orders
                   </Link>
                   {roles.includes("seller") && (
-                    <Link
-                      to="/seller/dashboard"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
-                    >
-                      <Store className="h-4 w-4" /> Seller dashboard
-                    </Link>
+                    <>
+                      <Link
+                        to="/seller/dashboard"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Store className="h-4 w-4" /> Seller dashboard
+                      </Link>
+                      <Link
+                        to="/seller/wallet"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <ShoppingCart className="h-4 w-4" /> My wallet
+                      </Link>
+                    </>
                   )}
                   {roles.includes("delivery") && (
                     <Link
@@ -280,12 +324,51 @@ export function Navbar() {
                     </Link>
                   )}
                   {(roles.includes("admin") || roles.includes("super_admin")) && (
+                    <>
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Shield className="h-4 w-4" /> Admin
+                      </Link>
+                      <Link
+                        to="/admin/seller-applications"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Store className="h-4 w-4" /> Seller apps
+                      </Link>
+                      <Link
+                        to="/admin/products"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Package className="h-4 w-4" /> Product approvals
+                      </Link>
+                      <Link
+                        to="/admin/payments"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Package className="h-4 w-4" /> Payments
+                      </Link>
+                      <Link
+                        to="/admin/withdrawals"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Package className="h-4 w-4" /> Withdrawals
+                      </Link>
+                    </>
+                  )}
+                  {roles.includes("super_admin") && (
                     <Link
-                      to="/admin/dashboard"
+                      to="/admin/seller-boosts"
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                     >
-                      <Shield className="h-4 w-4" /> Admin
+                      <Package className="h-4 w-4" /> Seller boosts
                     </Link>
                   )}
                   <button

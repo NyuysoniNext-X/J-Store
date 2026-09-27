@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { useWishlist } from "@/lib/store";
-import { PRODUCTS } from "@/lib/mock-data";
+import { useProducts } from "@/lib/queries";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,19 @@ export const Route = createFileRoute("/wishlist")({
 
 function WishlistPage() {
   const ids = useWishlist((s) => s.ids);
-  const items = PRODUCTS.filter((p) => ids.includes(p.id));
+  const { data: allProducts = [], isLoading } = useProducts();
+  const items = allProducts.filter((p) => ids.includes(p.id));
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-384 px-6 py-10">
+        <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Your wishlist</h1>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-gold" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-384 px-6 py-10">

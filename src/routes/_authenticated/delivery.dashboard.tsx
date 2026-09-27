@@ -8,6 +8,7 @@ import {
 import { CheckCircle2, Clock, Loader2, MapPin, PackageCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json, Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { formatXAF } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -18,68 +19,109 @@ export const Route = createFileRoute("/_authenticated/delivery/dashboard")({
   head: () => ({ meta: [{ title: "Delivery dashboard — J-STORE.cm" }] }),
 });
 
-type DeliveryOrder = {
-  id: string;
-  address: string;
-  city: string | null;
-  phone: string | null;
-  total: number;
-  status: string;
-  delivery_status: string;
-  rider_id: string | null;
-  created_at: string;
+type DeliveryOrder = Tables<"deliveries"> & {
+  order: Pick<Tables<"orders">, "delivery_address" | "total"> | null;
 };
+
+type DeliveryAction = {
+  id: string;
+  status: "assigned" | "picked_up" | "delivered";
+  previousStatus: Tables<"deliveries">["status"];
+};
+
+function formatAddress(address: Json | null): string {
+  if (typeof address === "string") return address;
+  if (!address || typeof address !== "object" || Array.isArray(address)) {
+    return "Address unavailable";
+  }
+  const parts = [address.address, address.quarter, address.landmark, address.city];
+  return (
+    parts
+      .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+      .join(", ") || "Address unavailable"
+  );
+}
 
 function DeliveryDashboard() {
   const { user, hasAnyRole } = useAuth();
   const qc = useQueryClient();
   const canAccess = hasAnyRole(["delivery", "admin", "super_admin"]);
 
-  const { data: orders = [], isLoading } = useQuery({
+  const {
+    data: personnel,
+    isLoading: personnelLoading,
+    isError: personnelError,
+  } = useQuery({
+    queryKey: ["delivery-personnel", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_personnel")
+        .select("id,is_approved")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && canAccess,
+  });
+
+  const {
+    data: orders = [],
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["delivery-orders", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders")
-        .select("id,address,city,phone,total,status,delivery_status,rider_id,created_at")
-        .in("delivery_status", ["unassigned", "assigned", "picked_up", "out_for_delivery"])
+        .from("deliveries")
+        .select("*, order:orders(delivery_address,total)")
+        .in("status", ["unassigned", "assigned", "picked_up", "in_transit"])
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as DeliveryOrder[];
+      return data;
     },
     enabled: !!user && canAccess,
   });
 
   const updateOrder = useMutation({
-    mutationFn: async ({
-      id,
-      patch,
-    }: {
-      id: string;
-      patch: Partial<DeliveryOrder> & {
-        picked_up_at?: string;
-        delivered_at?: string;
-        awaiting_buyer_confirm?: boolean;
-      };
-    }) => {
-      const { error } = await supabase.from("orders").update(patch).eq("id", id);
+    mutationFn: async ({ id, status, previousStatus }: DeliveryAction) => {
+      if (!personnel?.is_approved) throw new Error("An approved delivery profile is required.");
+      const now = new Date().toISOString();
+      let query = supabase
+        .from("deliveries")
+        .update({
+          status,
+          ...(status === "assigned"
+            ? { delivery_personnel_id: personnel.id, assigned_at: now }
+            : {}),
+          ...(status === "picked_up" ? { picked_up_at: now } : {}),
+          ...(status === "delivered" ? { delivered_at: now } : {}),
+        })
+        .eq("id", id)
+        .eq("status", previousStatus);
+      query =
+        status === "assigned"
+          ? query.is("delivery_personnel_id", null)
+          : query.eq("delivery_personnel_id", personnel.id);
+      const { data, error } = await query.select("id").maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Delivery changed or access was denied. Refresh and try again.");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["delivery-orders", user?.id] });
       toast.success("Delivery updated");
-      qc.invalidateQueries({ queryKey: ["delivery-orders", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const assigned = orders.filter((o) => o.rider_id === user?.id);
-  const available = orders.filter((o) => !o.rider_id);
+  const assigned = orders.filter((o) => o.delivery_personnel_id === personnel?.id);
+  const available = orders.filter((o) => !o.delivery_personnel_id && o.status === "unassigned");
   const stats = [
     { label: "Assigned", value: assigned.length, icon: Truck },
     { label: "Available", value: available.length, icon: PackageCheck },
     {
       label: "In transit",
-      value: assigned.filter((o) => ["picked_up", "out_for_delivery"].includes(o.delivery_status))
-        .length,
+      value: assigned.filter((o) => ["picked_up", "in_transit"].includes(o.status)).length,
       icon: Clock,
     },
   ];
@@ -132,24 +174,34 @@ function DeliveryDashboard() {
         ))}
       </div>
 
-      {isLoading ? (
+      {isLoading || personnelLoading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-gold" />
         </div>
+      ) : isError || personnelError ? (
+        <p role="alert" className="py-10 text-center text-destructive">
+          Unable to load deliveries. Please refresh and try again.
+        </p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
+          {!personnel?.is_approved && (
+            <p className="text-sm text-muted-foreground lg:col-span-2">
+              An approved delivery profile is required to claim or update deliveries. Contact an
+              administrator.
+            </p>
+          )}
           <OrderColumn
             title="My deliveries"
             orders={assigned}
             empty="No deliveries assigned yet."
-            userId={user!.id}
+            canUpdate={!!personnel?.is_approved}
             updateOrder={updateOrder}
           />
           <OrderColumn
             title="Available pickups"
             orders={available}
             empty="No available pickups right now."
-            userId={user!.id}
+            canUpdate={!!personnel?.is_approved}
             updateOrder={updateOrder}
           />
         </div>
@@ -158,30 +210,19 @@ function DeliveryDashboard() {
   );
 }
 
-type DeliveryUpdateMutation = UseMutationResult<
-  void,
-  Error,
-  {
-    id: string;
-    patch: Partial<DeliveryOrder> & {
-      picked_up_at?: string;
-      delivered_at?: string;
-      awaiting_buyer_confirm?: boolean;
-    };
-  }
->;
+type DeliveryUpdateMutation = UseMutationResult<void, Error, DeliveryAction>;
 
 function OrderColumn({
   title,
   orders,
   empty,
-  userId,
+  canUpdate,
   updateOrder,
 }: {
   title: string;
   orders: DeliveryOrder[];
   empty: string;
-  userId: string;
+  canUpdate: boolean;
   updateOrder: DeliveryUpdateMutation;
 }) {
   return (
@@ -195,44 +236,46 @@ function OrderColumn({
             <div key={order.id} className="rounded-2xl border border-border p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold">#{order.id.slice(0, 8)}</p>
+                  <p className="font-semibold">#{order.order_id.slice(0, 8)}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" /> {order.address}, {order.city ?? "Cameroon"}
+                    <MapPin className="h-3 w-3" />{" "}
+                    {formatAddress(order.order?.delivery_address ?? null)}
                   </p>
                 </div>
                 <Badge variant="outline" className="capitalize">
-                  {order.delivery_status.replaceAll("_", " ")}
+                  {order.status.replaceAll("_", " ")}
                 </Badge>
               </div>
               <div className="mb-4 flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Order total</span>
-                <span className="font-semibold">{formatXAF(order.total)}</span>
+                <span className="font-semibold">
+                  {order.order ? formatXAF(order.order.total) : "Unavailable"}
+                </span>
               </div>
-              {!order.rider_id ? (
+              {!order.delivery_personnel_id ? (
                 <Button
                   size="sm"
-                  disabled={updateOrder.isPending}
+                  disabled={!canUpdate || updateOrder.isPending}
                   onClick={() =>
                     updateOrder.mutate({
                       id: order.id,
-                      patch: { rider_id: userId, delivery_status: "assigned" },
+                      status: "assigned",
+                      previousStatus: order.status,
                     })
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                 >
                   Claim delivery
                 </Button>
-              ) : order.delivery_status === "assigned" ? (
+              ) : order.status === "assigned" ? (
                 <Button
                   size="sm"
-                  disabled={updateOrder.isPending}
+                  disabled={!canUpdate || updateOrder.isPending}
                   onClick={() =>
                     updateOrder.mutate({
                       id: order.id,
-                      patch: {
-                        delivery_status: "picked_up",
-                        picked_up_at: new Date().toISOString(),
-                      },
+                      status: "picked_up",
+                      previousStatus: order.status,
                     })
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
@@ -242,16 +285,12 @@ function OrderColumn({
               ) : (
                 <Button
                   size="sm"
-                  disabled={updateOrder.isPending}
+                  disabled={!canUpdate || updateOrder.isPending}
                   onClick={() =>
                     updateOrder.mutate({
                       id: order.id,
-                      patch: {
-                        delivery_status: "delivered",
-                        status: "delivered",
-                        delivered_at: new Date().toISOString(),
-                        awaiting_buyer_confirm: true,
-                      },
+                      status: "delivered",
+                      previousStatus: order.status,
                     })
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"

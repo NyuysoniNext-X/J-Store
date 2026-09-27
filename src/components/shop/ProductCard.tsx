@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, Eye, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Minus, Plus, Crown, Star, Megaphone } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -9,8 +9,38 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/shop/StarRating";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { SellerBoostTier } from "@/lib/types";
 
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+const BOOST_ICONS: Record<SellerBoostTier, React.ElementType | null> = {
+  normal: null,
+  featured: Star,
+  top_seller: Crown,
+  sponsored: Megaphone,
+};
+
+const BOOST_LABELS: Record<SellerBoostTier, string> = {
+  normal: "",
+  featured: "Featured",
+  top_seller: "Top Seller",
+  sponsored: "Sponsored",
+};
+
+const BOOST_COLORS: Record<SellerBoostTier, string> = {
+  normal: "",
+  featured: "bg-blue-500 text-white",
+  top_seller: "bg-gold text-gold-foreground",
+  sponsored: "bg-purple-500 text-white",
+};
+
+export function ProductCard({
+  product,
+  index = 0,
+  boostTier = "normal",
+}: {
+  product: Product;
+  index?: number;
+  boostTier?: SellerBoostTier;
+}) {
   const add = useCart((s) => s.add);
   const toggleWish = useWishlist((s) => s.toggle);
   const wished = useWishlist((s) => s.ids.includes(product.id));
@@ -27,6 +57,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           : "";
 
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
+
+  const BoostIcon = BOOST_ICONS[boostTier];
+  const showBoost = boostTier !== "normal" && BoostIcon;
 
   return (
     <motion.div
@@ -61,8 +94,14 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
               </span>
             </div>
           )}
-          {(product.badge || discount > 0) && (
+          {(product.badge || discount > 0 || showBoost) && (
             <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
+              {showBoost && BoostIcon && (
+                <Badge className={cn("uppercase tracking-wider text-[10px] gap-1", BOOST_COLORS[boostTier])}>
+                  <BoostIcon className="h-3 w-3" />
+                  {BOOST_LABELS[boostTier]}
+                </Badge>
+              )}
               {product.badge && (
                 <Badge className={cn("uppercase tracking-wider text-[10px]", badgeColor)}>
                   {product.badge}
@@ -163,8 +202,14 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                 </span>
               </div>
             )}
-            {(product.badge || discount > 0) && (
+            {(product.badge || discount > 0 || showBoost) && (
               <div className="absolute top-4 left-4 flex flex-col gap-1 items-start">
+                {showBoost && BoostIcon && (
+                  <Badge className={cn("uppercase tracking-wider text-[10px] gap-1", BOOST_COLORS[boostTier])}>
+                    <BoostIcon className="h-3 w-3" />
+                    {BOOST_LABELS[boostTier]}
+                  </Badge>
+                )}
                 {product.badge && (
                   <Badge className={cn("uppercase tracking-wider text-[10px]", badgeColor)}>
                     {product.badge}

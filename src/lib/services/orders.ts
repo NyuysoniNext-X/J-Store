@@ -5,14 +5,10 @@ type Order = Tables<"orders">;
 type OrderItem = Tables<"order_items">;
 
 export const ordersService = {
-  async list(buyerId: string) {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("buyer_id", buyerId)
-      .order("created_at", { ascending: false });
+  async create(payload: TablesInsert<"orders">) {
+    const { data, error } = await supabase.from("orders").insert(payload).select().single();
     if (error) throw error;
-    return data as (Order & { order_items: OrderItem[] })[];
+    return data as Order;
   },
 
   async getById(orderId: string) {
@@ -25,17 +21,21 @@ export const ordersService = {
     return data as (Order & { order_items: OrderItem[] }) | null;
   },
 
-  async create(payload: TablesInsert<"orders">) {
-    const { data, error } = await supabase.from("orders").insert(payload).select().single();
+  async list(buyerId: string) {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*, order_items(*)")
+      .eq("buyer_id", buyerId)
+      .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as Order;
+    return data as (Order & { order_items: OrderItem[] })[];
   },
 
-  async updateStatus(orderId: string, status: string) {
+  async updateStatus(orderId: string, status: any) {
     const { error } = await supabase
       .from("orders")
       .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", orderId);
+      .eq("id", orderId); // <-- Removed the extra ')'
     if (error) throw error;
   },
 };

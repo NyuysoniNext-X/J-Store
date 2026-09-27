@@ -9,69 +9,56 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WishlistRouteImport } from './routes/wishlist'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ShopRouteImport } from './routes/shop'
-import { Route as OrderSuccessRouteImport } from './routes/order-success'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SellerRegisterRouteImport } from './routes/seller.register'
-import { Route as ProductIdRouteImport } from './routes/product.$id'
-import { Route as DeliveryCompanyRouteImport } from './routes/delivery.company'
-import { Route as DeliveryApplyRouteImport } from './routes/delivery.apply'
-import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedSuper_adminRouteImport } from './routes/_authenticated/_super_admin'
-import { Route as AuthenticatedSellerRouteImport } from './routes/_authenticated/_seller'
-import { Route as AuthenticatedPartnerRouteImport } from './routes/_authenticated/_partner'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OrderSuccessRouteImport } from './routes/order-success'
+import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/_admin'
+import { Route as AuthenticatedPartnerRouteImport } from './routes/_authenticated/_partner'
+import { Route as AuthenticatedSellerRouteImport } from './routes/_authenticated/_seller'
+import { Route as AuthenticatedSuper_adminRouteImport } from './routes/_authenticated/_super_admin'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as DeliveryApplyRouteImport } from './routes/delivery.apply'
+import { Route as DeliveryCompanyRouteImport } from './routes/delivery.company'
+import { Route as LegalCodPolicyRouteImport } from './routes/legal.cod-policy'
+import { Route as LegalMarketplaceRulesRouteImport } from './routes/legal.marketplace-rules'
+import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
+import { Route as LegalSellerAgreementRouteImport } from './routes/legal.seller-agreement'
+import { Route as LegalTermsRouteImport } from './routes/legal.terms'
+import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as SellerRegisterRouteImport } from './routes/seller.register'
+import { Route as AuthenticatedDeliveryDashboardRouteImport } from './routes/_authenticated/delivery.dashboard'
 import { Route as AuthenticatedOrdersIndexRouteImport } from './routes/_authenticated/orders.index'
 import { Route as OrdersTrackIdRouteImport } from './routes/orders.track.$id'
-import { Route as AuthenticatedDeliveryDashboardRouteImport } from './routes/_authenticated/delivery.dashboard'
-import { Route as AuthenticatedSuper_adminSuperAdminDashboardRouteImport } from './routes/_authenticated/_super_admin/super-admin.dashboard'
-import { Route as AuthenticatedSellerSellerProductsRouteImport } from './routes/_authenticated/_seller/seller.products'
-import { Route as AuthenticatedSellerSellerDashboardRouteImport } from './routes/_authenticated/_seller/seller.dashboard'
-import { Route as AuthenticatedPartnerPartnerDashboardRouteImport } from './routes/_authenticated/_partner/partner.dashboard'
-import { Route as AuthenticatedAdminAdminProductsRouteImport } from './routes/_authenticated/_admin/admin.products'
 import { Route as AuthenticatedAdminAdminDashboardRouteImport } from './routes/_authenticated/_admin/admin.dashboard'
+import { Route as AuthenticatedAdminAdminPaymentsRouteImport } from './routes/_authenticated/_admin/admin.payments'
+import { Route as AuthenticatedAdminAdminProductsRouteImport } from './routes/_authenticated/_admin/admin.products'
+import { Route as AuthenticatedAdminAdminSellerApplicationsRouteImport } from './routes/_authenticated/_admin/admin.seller-applications'
+import { Route as AuthenticatedAdminAdminSellerBoostsRouteImport } from './routes/_authenticated/_admin/admin.seller-boosts'
+import { Route as AuthenticatedAdminAdminUsersRouteImport } from './routes/_authenticated/_admin/admin.users'
+import { Route as AuthenticatedAdminAdminWithdrawalsRouteImport } from './routes/_authenticated/_admin/admin.withdrawals'
+import { Route as AuthenticatedPartnerPartnerDashboardRouteImport } from './routes/_authenticated/_partner/partner.dashboard'
+import { Route as AuthenticatedSellerSellerDashboardRouteImport } from './routes/_authenticated/_seller/seller.dashboard'
+import { Route as AuthenticatedSellerSellerProductsRouteImport } from './routes/_authenticated/_seller/seller.products'
+import { Route as AuthenticatedSellerSellerWalletRouteImport } from './routes/_authenticated/_seller/seller.wallet'
+import { Route as AuthenticatedSuper_adminSuperAdminDashboardRouteImport } from './routes/_authenticated/_super_admin/super-admin.dashboard'
+import { Route as AuthenticatedSuper_adminSuperAdminPoliciesRouteImport } from './routes/_authenticated/_super_admin/super-admin.policies'
+import { Route as AuthenticatedSellerSellerProductsOLDRouteImport } from './routes/_authenticated/_seller/seller.products.OLD'
 
-const WishlistRoute = WishlistRouteImport.update({
-  id: '/wishlist',
-  path: '/wishlist',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopRoute = ShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrderSuccessRoute = OrderSuccessRouteImport.update({
-  id: '/order-success',
-  path: '/order-success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -79,43 +66,51 @@ const CartRoute = CartRouteImport.update({
   path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SellerRegisterRoute = SellerRegisterRouteImport.update({
-  id: '/seller/register',
-  path: '/seller/register',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductIdRoute = ProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
+const OrderSuccessRoute = OrderSuccessRouteImport.update({
+  id: '/order-success',
+  path: '/order-success',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryCompanyRoute = DeliveryCompanyRouteImport.update({
-  id: '/delivery/company',
-  path: '/delivery/company',
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeliveryApplyRoute = DeliveryApplyRouteImport.update({
-  id: '/delivery/apply',
-  path: '/delivery/apply',
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedPartnerRoute = AuthenticatedPartnerRouteImport.update({
+  id: '/_partner',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSellerRoute = AuthenticatedSellerRouteImport.update({
+  id: '/_seller',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSuper_adminRoute =
@@ -123,18 +118,67 @@ const AuthenticatedSuper_adminRoute =
     id: '/_super_admin',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedSellerRoute = AuthenticatedSellerRouteImport.update({
-  id: '/_seller',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedPartnerRoute = AuthenticatedPartnerRouteImport.update({
-  id: '/_partner',
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => AuthenticatedRoute,
+const DeliveryApplyRoute = DeliveryApplyRouteImport.update({
+  id: '/delivery/apply',
+  path: '/delivery/apply',
+  getParentRoute: () => rootRouteImport,
 } as any)
+const DeliveryCompanyRoute = DeliveryCompanyRouteImport.update({
+  id: '/delivery/company',
+  path: '/delivery/company',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalCodPolicyRoute = LegalCodPolicyRouteImport.update({
+  id: '/legal/cod-policy',
+  path: '/legal/cod-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalMarketplaceRulesRoute = LegalMarketplaceRulesRouteImport.update({
+  id: '/legal/marketplace-rules',
+  path: '/legal/marketplace-rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
+  id: '/legal/privacy',
+  path: '/legal/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalSellerAgreementRoute = LegalSellerAgreementRouteImport.update({
+  id: '/legal/seller-agreement',
+  path: '/legal/seller-agreement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalTermsRoute = LegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductIdRoute = ProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SellerRegisterRoute = SellerRegisterRouteImport.update({
+  id: '/seller/register',
+  path: '/seller/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDeliveryDashboardRoute =
+  AuthenticatedDeliveryDashboardRouteImport.update({
+    id: '/delivery/dashboard',
+    path: '/delivery/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedOrdersIndexRoute =
   AuthenticatedOrdersIndexRouteImport.update({
     id: '/orders/',
@@ -146,35 +190,17 @@ const OrdersTrackIdRoute = OrdersTrackIdRouteImport.update({
   path: '/orders/track/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDeliveryDashboardRoute =
-  AuthenticatedDeliveryDashboardRouteImport.update({
-    id: '/delivery/dashboard',
-    path: '/delivery/dashboard',
-    getParentRoute: () => AuthenticatedRoute,
+const AuthenticatedAdminAdminDashboardRoute =
+  AuthenticatedAdminAdminDashboardRouteImport.update({
+    id: '/admin/dashboard',
+    path: '/admin/dashboard',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedSuper_adminSuperAdminDashboardRoute =
-  AuthenticatedSuper_adminSuperAdminDashboardRouteImport.update({
-    id: '/super-admin/dashboard',
-    path: '/super-admin/dashboard',
-    getParentRoute: () => AuthenticatedSuper_adminRoute,
-  } as any)
-const AuthenticatedSellerSellerProductsRoute =
-  AuthenticatedSellerSellerProductsRouteImport.update({
-    id: '/seller/products',
-    path: '/seller/products',
-    getParentRoute: () => AuthenticatedSellerRoute,
-  } as any)
-const AuthenticatedSellerSellerDashboardRoute =
-  AuthenticatedSellerSellerDashboardRouteImport.update({
-    id: '/seller/dashboard',
-    path: '/seller/dashboard',
-    getParentRoute: () => AuthenticatedSellerRoute,
-  } as any)
-const AuthenticatedPartnerPartnerDashboardRoute =
-  AuthenticatedPartnerPartnerDashboardRouteImport.update({
-    id: '/partner/dashboard',
-    path: '/partner/dashboard',
-    getParentRoute: () => AuthenticatedPartnerRoute,
+const AuthenticatedAdminAdminPaymentsRoute =
+  AuthenticatedAdminAdminPaymentsRouteImport.update({
+    id: '/admin/payments',
+    path: '/admin/payments',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminAdminProductsRoute =
   AuthenticatedAdminAdminProductsRouteImport.update({
@@ -182,11 +208,71 @@ const AuthenticatedAdminAdminProductsRoute =
     path: '/admin/products',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedAdminAdminDashboardRoute =
-  AuthenticatedAdminAdminDashboardRouteImport.update({
-    id: '/admin/dashboard',
-    path: '/admin/dashboard',
+const AuthenticatedAdminAdminSellerApplicationsRoute =
+  AuthenticatedAdminAdminSellerApplicationsRouteImport.update({
+    id: '/admin/seller-applications',
+    path: '/admin/seller-applications',
     getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAdminSellerBoostsRoute =
+  AuthenticatedAdminAdminSellerBoostsRouteImport.update({
+    id: '/admin/seller-boosts',
+    path: '/admin/seller-boosts',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAdminUsersRoute =
+  AuthenticatedAdminAdminUsersRouteImport.update({
+    id: '/admin/users',
+    path: '/admin/users',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAdminWithdrawalsRoute =
+  AuthenticatedAdminAdminWithdrawalsRouteImport.update({
+    id: '/admin/withdrawals',
+    path: '/admin/withdrawals',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedPartnerPartnerDashboardRoute =
+  AuthenticatedPartnerPartnerDashboardRouteImport.update({
+    id: '/partner/dashboard',
+    path: '/partner/dashboard',
+    getParentRoute: () => AuthenticatedPartnerRoute,
+  } as any)
+const AuthenticatedSellerSellerDashboardRoute =
+  AuthenticatedSellerSellerDashboardRouteImport.update({
+    id: '/seller/dashboard',
+    path: '/seller/dashboard',
+    getParentRoute: () => AuthenticatedSellerRoute,
+  } as any)
+const AuthenticatedSellerSellerProductsRoute =
+  AuthenticatedSellerSellerProductsRouteImport.update({
+    id: '/seller/products',
+    path: '/seller/products',
+    getParentRoute: () => AuthenticatedSellerRoute,
+  } as any)
+const AuthenticatedSellerSellerWalletRoute =
+  AuthenticatedSellerSellerWalletRouteImport.update({
+    id: '/seller/wallet',
+    path: '/seller/wallet',
+    getParentRoute: () => AuthenticatedSellerRoute,
+  } as any)
+const AuthenticatedSuper_adminSuperAdminDashboardRoute =
+  AuthenticatedSuper_adminSuperAdminDashboardRouteImport.update({
+    id: '/super-admin/dashboard',
+    path: '/super-admin/dashboard',
+    getParentRoute: () => AuthenticatedSuper_adminRoute,
+  } as any)
+const AuthenticatedSuper_adminSuperAdminPoliciesRoute =
+  AuthenticatedSuper_adminSuperAdminPoliciesRouteImport.update({
+    id: '/super-admin/policies',
+    path: '/super-admin/policies',
+    getParentRoute: () => AuthenticatedSuper_adminRoute,
+  } as any)
+const AuthenticatedSellerSellerProductsOLDRoute =
+  AuthenticatedSellerSellerProductsOLDRouteImport.update({
+    id: '/OLD',
+    path: '/OLD',
+    getParentRoute: () => AuthenticatedSellerSellerProductsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -203,17 +289,30 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/delivery/apply': typeof DeliveryApplyRoute
   '/delivery/company': typeof DeliveryCompanyRoute
+  '/legal/cod-policy': typeof LegalCodPolicyRoute
+  '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/seller-agreement': typeof LegalSellerAgreementRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/register': typeof SellerRegisterRoute
   '/delivery/dashboard': typeof AuthenticatedDeliveryDashboardRoute
   '/orders/track/$id': typeof OrdersTrackIdRoute
   '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/admin/dashboard': typeof AuthenticatedAdminAdminDashboardRoute
+  '/admin/payments': typeof AuthenticatedAdminAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminAdminProductsRoute
+  '/admin/seller-applications': typeof AuthenticatedAdminAdminSellerApplicationsRoute
+  '/admin/seller-boosts': typeof AuthenticatedAdminAdminSellerBoostsRoute
+  '/admin/users': typeof AuthenticatedAdminAdminUsersRoute
+  '/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/seller/products': typeof AuthenticatedSellerSellerProductsRoute
+  '/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
+  '/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
+  '/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -229,17 +328,30 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/delivery/apply': typeof DeliveryApplyRoute
   '/delivery/company': typeof DeliveryCompanyRoute
+  '/legal/cod-policy': typeof LegalCodPolicyRoute
+  '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/seller-agreement': typeof LegalSellerAgreementRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/register': typeof SellerRegisterRoute
   '/delivery/dashboard': typeof AuthenticatedDeliveryDashboardRoute
   '/orders/track/$id': typeof OrdersTrackIdRoute
   '/orders': typeof AuthenticatedOrdersIndexRoute
   '/admin/dashboard': typeof AuthenticatedAdminAdminDashboardRoute
+  '/admin/payments': typeof AuthenticatedAdminAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminAdminProductsRoute
+  '/admin/seller-applications': typeof AuthenticatedAdminAdminSellerApplicationsRoute
+  '/admin/seller-boosts': typeof AuthenticatedAdminAdminSellerBoostsRoute
+  '/admin/users': typeof AuthenticatedAdminAdminUsersRoute
+  '/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/seller/products': typeof AuthenticatedSellerSellerProductsRoute
+  '/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
+  '/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
+  '/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,17 +373,30 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/delivery/apply': typeof DeliveryApplyRoute
   '/delivery/company': typeof DeliveryCompanyRoute
+  '/legal/cod-policy': typeof LegalCodPolicyRoute
+  '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/seller-agreement': typeof LegalSellerAgreementRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/register': typeof SellerRegisterRoute
   '/_authenticated/delivery/dashboard': typeof AuthenticatedDeliveryDashboardRoute
   '/orders/track/$id': typeof OrdersTrackIdRoute
   '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/_admin/admin/dashboard': typeof AuthenticatedAdminAdminDashboardRoute
+  '/_authenticated/_admin/admin/payments': typeof AuthenticatedAdminAdminPaymentsRoute
   '/_authenticated/_admin/admin/products': typeof AuthenticatedAdminAdminProductsRoute
+  '/_authenticated/_admin/admin/seller-applications': typeof AuthenticatedAdminAdminSellerApplicationsRoute
+  '/_authenticated/_admin/admin/seller-boosts': typeof AuthenticatedAdminAdminSellerBoostsRoute
+  '/_authenticated/_admin/admin/users': typeof AuthenticatedAdminAdminUsersRoute
+  '/_authenticated/_admin/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/_authenticated/_partner/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/_authenticated/_seller/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/_authenticated/_seller/seller/products': typeof AuthenticatedSellerSellerProductsRoute
+  '/_authenticated/_seller/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/_authenticated/_seller/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/_authenticated/_super_admin/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
+  '/_authenticated/_super_admin/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
+  '/_authenticated/_seller/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -289,17 +414,30 @@ export interface FileRouteTypes {
     | '/profile'
     | '/delivery/apply'
     | '/delivery/company'
+    | '/legal/cod-policy'
+    | '/legal/marketplace-rules'
+    | '/legal/privacy'
+    | '/legal/seller-agreement'
+    | '/legal/terms'
     | '/product/$id'
     | '/seller/register'
     | '/delivery/dashboard'
     | '/orders/track/$id'
     | '/orders/'
     | '/admin/dashboard'
+    | '/admin/payments'
     | '/admin/products'
+    | '/admin/seller-applications'
+    | '/admin/seller-boosts'
+    | '/admin/users'
+    | '/admin/withdrawals'
     | '/partner/dashboard'
     | '/seller/dashboard'
     | '/seller/products'
+    | '/seller/wallet'
     | '/super-admin/dashboard'
+    | '/super-admin/policies'
+    | '/seller/products/OLD'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -315,17 +453,30 @@ export interface FileRouteTypes {
     | '/profile'
     | '/delivery/apply'
     | '/delivery/company'
+    | '/legal/cod-policy'
+    | '/legal/marketplace-rules'
+    | '/legal/privacy'
+    | '/legal/seller-agreement'
+    | '/legal/terms'
     | '/product/$id'
     | '/seller/register'
     | '/delivery/dashboard'
     | '/orders/track/$id'
     | '/orders'
     | '/admin/dashboard'
+    | '/admin/payments'
     | '/admin/products'
+    | '/admin/seller-applications'
+    | '/admin/seller-boosts'
+    | '/admin/users'
+    | '/admin/withdrawals'
     | '/partner/dashboard'
     | '/seller/dashboard'
     | '/seller/products'
+    | '/seller/wallet'
     | '/super-admin/dashboard'
+    | '/super-admin/policies'
+    | '/seller/products/OLD'
   id:
     | '__root__'
     | '/'
@@ -346,17 +497,30 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/delivery/apply'
     | '/delivery/company'
+    | '/legal/cod-policy'
+    | '/legal/marketplace-rules'
+    | '/legal/privacy'
+    | '/legal/seller-agreement'
+    | '/legal/terms'
     | '/product/$id'
     | '/seller/register'
     | '/_authenticated/delivery/dashboard'
     | '/orders/track/$id'
     | '/_authenticated/orders/'
     | '/_authenticated/_admin/admin/dashboard'
+    | '/_authenticated/_admin/admin/payments'
     | '/_authenticated/_admin/admin/products'
+    | '/_authenticated/_admin/admin/seller-applications'
+    | '/_authenticated/_admin/admin/seller-boosts'
+    | '/_authenticated/_admin/admin/users'
+    | '/_authenticated/_admin/admin/withdrawals'
     | '/_authenticated/_partner/partner/dashboard'
     | '/_authenticated/_seller/seller/dashboard'
     | '/_authenticated/_seller/seller/products'
+    | '/_authenticated/_seller/seller/wallet'
     | '/_authenticated/_super_admin/super-admin/dashboard'
+    | '/_authenticated/_super_admin/super-admin/policies'
+    | '/_authenticated/_seller/seller/products/OLD'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -372,6 +536,11 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   DeliveryApplyRoute: typeof DeliveryApplyRoute
   DeliveryCompanyRoute: typeof DeliveryCompanyRoute
+  LegalCodPolicyRoute: typeof LegalCodPolicyRoute
+  LegalMarketplaceRulesRoute: typeof LegalMarketplaceRulesRoute
+  LegalPrivacyRoute: typeof LegalPrivacyRoute
+  LegalSellerAgreementRoute: typeof LegalSellerAgreementRoute
+  LegalTermsRoute: typeof LegalTermsRoute
   ProductIdRoute: typeof ProductIdRoute
   SellerRegisterRoute: typeof SellerRegisterRoute
   OrdersTrackIdRoute: typeof OrdersTrackIdRoute
@@ -379,60 +548,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/wishlist': {
-      id: '/wishlist'
-      path: '/wishlist'
-      fullPath: '/wishlist'
-      preLoaderRoute: typeof WishlistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shop': {
-      id: '/shop'
-      path: '/shop'
-      fullPath: '/shop'
-      preLoaderRoute: typeof ShopRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/order-success': {
-      id: '/order-success'
-      path: '/order-success'
-      fullPath: '/order-success'
-      preLoaderRoute: typeof OrderSuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -442,67 +562,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/seller/register': {
-      id: '/seller/register'
-      path: '/seller/register'
-      fullPath: '/seller/register'
-      preLoaderRoute: typeof SellerRegisterRouteImport
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/product/$id': {
-      id: '/product/$id'
-      path: '/product/$id'
-      fullPath: '/product/$id'
-      preLoaderRoute: typeof ProductIdRouteImport
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/company': {
-      id: '/delivery/company'
-      path: '/delivery/company'
-      fullPath: '/delivery/company'
-      preLoaderRoute: typeof DeliveryCompanyRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/delivery/apply': {
-      id: '/delivery/apply'
-      path: '/delivery/apply'
-      fullPath: '/delivery/apply'
-      preLoaderRoute: typeof DeliveryApplyRouteImport
+    '/order-success': {
+      id: '/order-success'
+      path: '/order-success'
+      fullPath: '/order-success'
+      preLoaderRoute: typeof OrderSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/profile': {
-      id: '/_authenticated/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/_super_admin': {
-      id: '/_authenticated/_super_admin'
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/_admin': {
+      id: '/_authenticated/_admin'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedSuper_adminRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_seller': {
-      id: '/_authenticated/_seller'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedSellerRouteImport
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/_partner': {
@@ -512,11 +632,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPartnerRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/_admin': {
-      id: '/_authenticated/_admin'
+    '/_authenticated/_seller': {
+      id: '/_authenticated/_seller'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      preLoaderRoute: typeof AuthenticatedSellerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/_super_admin': {
+      id: '/_authenticated/_super_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedSuper_adminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/delivery/apply': {
+      id: '/delivery/apply'
+      path: '/delivery/apply'
+      fullPath: '/delivery/apply'
+      preLoaderRoute: typeof DeliveryApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery/company': {
+      id: '/delivery/company'
+      path: '/delivery/company'
+      fullPath: '/delivery/company'
+      preLoaderRoute: typeof DeliveryCompanyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/cod-policy': {
+      id: '/legal/cod-policy'
+      path: '/legal/cod-policy'
+      fullPath: '/legal/cod-policy'
+      preLoaderRoute: typeof LegalCodPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/marketplace-rules': {
+      id: '/legal/marketplace-rules'
+      path: '/legal/marketplace-rules'
+      fullPath: '/legal/marketplace-rules'
+      preLoaderRoute: typeof LegalMarketplaceRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/privacy': {
+      id: '/legal/privacy'
+      path: '/legal/privacy'
+      fullPath: '/legal/privacy'
+      preLoaderRoute: typeof LegalPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/seller-agreement': {
+      id: '/legal/seller-agreement'
+      path: '/legal/seller-agreement'
+      fullPath: '/legal/seller-agreement'
+      preLoaderRoute: typeof LegalSellerAgreementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/terms': {
+      id: '/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof LegalTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/product/$id': {
+      id: '/product/$id'
+      path: '/product/$id'
+      fullPath: '/product/$id'
+      preLoaderRoute: typeof ProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seller/register': {
+      id: '/seller/register'
+      path: '/seller/register'
+      fullPath: '/seller/register'
+      preLoaderRoute: typeof SellerRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/delivery/dashboard': {
+      id: '/_authenticated/delivery/dashboard'
+      path: '/delivery/dashboard'
+      fullPath: '/delivery/dashboard'
+      preLoaderRoute: typeof AuthenticatedDeliveryDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/orders/': {
@@ -533,40 +744,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersTrackIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/delivery/dashboard': {
-      id: '/_authenticated/delivery/dashboard'
-      path: '/delivery/dashboard'
-      fullPath: '/delivery/dashboard'
-      preLoaderRoute: typeof AuthenticatedDeliveryDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/_authenticated/_admin/admin/dashboard': {
+      id: '/_authenticated/_admin/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminAdminDashboardRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/_super_admin/super-admin/dashboard': {
-      id: '/_authenticated/_super_admin/super-admin/dashboard'
-      path: '/super-admin/dashboard'
-      fullPath: '/super-admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedSuper_adminSuperAdminDashboardRouteImport
-      parentRoute: typeof AuthenticatedSuper_adminRoute
-    }
-    '/_authenticated/_seller/seller/products': {
-      id: '/_authenticated/_seller/seller/products'
-      path: '/seller/products'
-      fullPath: '/seller/products'
-      preLoaderRoute: typeof AuthenticatedSellerSellerProductsRouteImport
-      parentRoute: typeof AuthenticatedSellerRoute
-    }
-    '/_authenticated/_seller/seller/dashboard': {
-      id: '/_authenticated/_seller/seller/dashboard'
-      path: '/seller/dashboard'
-      fullPath: '/seller/dashboard'
-      preLoaderRoute: typeof AuthenticatedSellerSellerDashboardRouteImport
-      parentRoute: typeof AuthenticatedSellerRoute
-    }
-    '/_authenticated/_partner/partner/dashboard': {
-      id: '/_authenticated/_partner/partner/dashboard'
-      path: '/partner/dashboard'
-      fullPath: '/partner/dashboard'
-      preLoaderRoute: typeof AuthenticatedPartnerPartnerDashboardRouteImport
-      parentRoute: typeof AuthenticatedPartnerRoute
+    '/_authenticated/_admin/admin/payments': {
+      id: '/_authenticated/_admin/admin/payments'
+      path: '/admin/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AuthenticatedAdminAdminPaymentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/_admin/admin/products': {
       id: '/_authenticated/_admin/admin/products'
@@ -575,24 +765,107 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAdminProductsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/_admin/admin/dashboard': {
-      id: '/_authenticated/_admin/admin/dashboard'
-      path: '/admin/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminAdminDashboardRouteImport
+    '/_authenticated/_admin/admin/seller-applications': {
+      id: '/_authenticated/_admin/admin/seller-applications'
+      path: '/admin/seller-applications'
+      fullPath: '/admin/seller-applications'
+      preLoaderRoute: typeof AuthenticatedAdminAdminSellerApplicationsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/_admin/admin/seller-boosts': {
+      id: '/_authenticated/_admin/admin/seller-boosts'
+      path: '/admin/seller-boosts'
+      fullPath: '/admin/seller-boosts'
+      preLoaderRoute: typeof AuthenticatedAdminAdminSellerBoostsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/_admin/admin/users': {
+      id: '/_authenticated/_admin/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/_admin/admin/withdrawals': {
+      id: '/_authenticated/_admin/admin/withdrawals'
+      path: '/admin/withdrawals'
+      fullPath: '/admin/withdrawals'
+      preLoaderRoute: typeof AuthenticatedAdminAdminWithdrawalsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/_partner/partner/dashboard': {
+      id: '/_authenticated/_partner/partner/dashboard'
+      path: '/partner/dashboard'
+      fullPath: '/partner/dashboard'
+      preLoaderRoute: typeof AuthenticatedPartnerPartnerDashboardRouteImport
+      parentRoute: typeof AuthenticatedPartnerRoute
+    }
+    '/_authenticated/_seller/seller/dashboard': {
+      id: '/_authenticated/_seller/seller/dashboard'
+      path: '/seller/dashboard'
+      fullPath: '/seller/dashboard'
+      preLoaderRoute: typeof AuthenticatedSellerSellerDashboardRouteImport
+      parentRoute: typeof AuthenticatedSellerRoute
+    }
+    '/_authenticated/_seller/seller/products': {
+      id: '/_authenticated/_seller/seller/products'
+      path: '/seller/products'
+      fullPath: '/seller/products'
+      preLoaderRoute: typeof AuthenticatedSellerSellerProductsRouteImport
+      parentRoute: typeof AuthenticatedSellerRoute
+    }
+    '/_authenticated/_seller/seller/wallet': {
+      id: '/_authenticated/_seller/seller/wallet'
+      path: '/seller/wallet'
+      fullPath: '/seller/wallet'
+      preLoaderRoute: typeof AuthenticatedSellerSellerWalletRouteImport
+      parentRoute: typeof AuthenticatedSellerRoute
+    }
+    '/_authenticated/_super_admin/super-admin/dashboard': {
+      id: '/_authenticated/_super_admin/super-admin/dashboard'
+      path: '/super-admin/dashboard'
+      fullPath: '/super-admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedSuper_adminSuperAdminDashboardRouteImport
+      parentRoute: typeof AuthenticatedSuper_adminRoute
+    }
+    '/_authenticated/_super_admin/super-admin/policies': {
+      id: '/_authenticated/_super_admin/super-admin/policies'
+      path: '/super-admin/policies'
+      fullPath: '/super-admin/policies'
+      preLoaderRoute: typeof AuthenticatedSuper_adminSuperAdminPoliciesRouteImport
+      parentRoute: typeof AuthenticatedSuper_adminRoute
+    }
+    '/_authenticated/_seller/seller/products/OLD': {
+      id: '/_authenticated/_seller/seller/products/OLD'
+      path: '/OLD'
+      fullPath: '/seller/products/OLD'
+      preLoaderRoute: typeof AuthenticatedSellerSellerProductsOLDRouteImport
+      parentRoute: typeof AuthenticatedSellerSellerProductsRoute
     }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAdminDashboardRoute: typeof AuthenticatedAdminAdminDashboardRoute
+  AuthenticatedAdminAdminPaymentsRoute: typeof AuthenticatedAdminAdminPaymentsRoute
   AuthenticatedAdminAdminProductsRoute: typeof AuthenticatedAdminAdminProductsRoute
+  AuthenticatedAdminAdminSellerApplicationsRoute: typeof AuthenticatedAdminAdminSellerApplicationsRoute
+  AuthenticatedAdminAdminSellerBoostsRoute: typeof AuthenticatedAdminAdminSellerBoostsRoute
+  AuthenticatedAdminAdminUsersRoute: typeof AuthenticatedAdminAdminUsersRoute
+  AuthenticatedAdminAdminWithdrawalsRoute: typeof AuthenticatedAdminAdminWithdrawalsRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAdminDashboardRoute: AuthenticatedAdminAdminDashboardRoute,
+  AuthenticatedAdminAdminPaymentsRoute: AuthenticatedAdminAdminPaymentsRoute,
   AuthenticatedAdminAdminProductsRoute: AuthenticatedAdminAdminProductsRoute,
+  AuthenticatedAdminAdminSellerApplicationsRoute:
+    AuthenticatedAdminAdminSellerApplicationsRoute,
+  AuthenticatedAdminAdminSellerBoostsRoute:
+    AuthenticatedAdminAdminSellerBoostsRoute,
+  AuthenticatedAdminAdminUsersRoute: AuthenticatedAdminAdminUsersRoute,
+  AuthenticatedAdminAdminWithdrawalsRoute:
+    AuthenticatedAdminAdminWithdrawalsRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -610,16 +883,33 @@ const AuthenticatedPartnerRouteChildren: AuthenticatedPartnerRouteChildren = {
 const AuthenticatedPartnerRouteWithChildren =
   AuthenticatedPartnerRoute._addFileChildren(AuthenticatedPartnerRouteChildren)
 
+interface AuthenticatedSellerSellerProductsRouteChildren {
+  AuthenticatedSellerSellerProductsOLDRoute: typeof AuthenticatedSellerSellerProductsOLDRoute
+}
+
+const AuthenticatedSellerSellerProductsRouteChildren: AuthenticatedSellerSellerProductsRouteChildren =
+  {
+    AuthenticatedSellerSellerProductsOLDRoute:
+      AuthenticatedSellerSellerProductsOLDRoute,
+  }
+
+const AuthenticatedSellerSellerProductsRouteWithChildren =
+  AuthenticatedSellerSellerProductsRoute._addFileChildren(
+    AuthenticatedSellerSellerProductsRouteChildren,
+  )
+
 interface AuthenticatedSellerRouteChildren {
   AuthenticatedSellerSellerDashboardRoute: typeof AuthenticatedSellerSellerDashboardRoute
-  AuthenticatedSellerSellerProductsRoute: typeof AuthenticatedSellerSellerProductsRoute
+  AuthenticatedSellerSellerProductsRoute: typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  AuthenticatedSellerSellerWalletRoute: typeof AuthenticatedSellerSellerWalletRoute
 }
 
 const AuthenticatedSellerRouteChildren: AuthenticatedSellerRouteChildren = {
   AuthenticatedSellerSellerDashboardRoute:
     AuthenticatedSellerSellerDashboardRoute,
   AuthenticatedSellerSellerProductsRoute:
-    AuthenticatedSellerSellerProductsRoute,
+    AuthenticatedSellerSellerProductsRouteWithChildren,
+  AuthenticatedSellerSellerWalletRoute: AuthenticatedSellerSellerWalletRoute,
 }
 
 const AuthenticatedSellerRouteWithChildren =
@@ -627,12 +917,15 @@ const AuthenticatedSellerRouteWithChildren =
 
 interface AuthenticatedSuper_adminRouteChildren {
   AuthenticatedSuper_adminSuperAdminDashboardRoute: typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
+  AuthenticatedSuper_adminSuperAdminPoliciesRoute: typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
 }
 
 const AuthenticatedSuper_adminRouteChildren: AuthenticatedSuper_adminRouteChildren =
   {
     AuthenticatedSuper_adminSuperAdminDashboardRoute:
       AuthenticatedSuper_adminSuperAdminDashboardRoute,
+    AuthenticatedSuper_adminSuperAdminPoliciesRoute:
+      AuthenticatedSuper_adminSuperAdminPoliciesRoute,
   }
 
 const AuthenticatedSuper_adminRouteWithChildren =
@@ -679,6 +972,11 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   DeliveryApplyRoute: DeliveryApplyRoute,
   DeliveryCompanyRoute: DeliveryCompanyRoute,
+  LegalCodPolicyRoute: LegalCodPolicyRoute,
+  LegalMarketplaceRulesRoute: LegalMarketplaceRulesRoute,
+  LegalPrivacyRoute: LegalPrivacyRoute,
+  LegalSellerAgreementRoute: LegalSellerAgreementRoute,
+  LegalTermsRoute: LegalTermsRoute,
   ProductIdRoute: ProductIdRoute,
   SellerRegisterRoute: SellerRegisterRoute,
   OrdersTrackIdRoute: OrdersTrackIdRoute,

@@ -146,25 +146,75 @@ function SuperAdminDashboard() {
           <TabsTrigger value="actions">Control center</TabsTrigger>
           <TabsTrigger value="delivery">Delivery applications</TabsTrigger>
         </TabsList>
-        <TabsContent value="actions" className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="actions" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Link
             to="/admin/dashboard"
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Shield className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Manage admins</h3>
+            <h3 className="font-display font-semibold">Admin dashboard</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Promote users to admin, revoke admin access, audit role grants.
+            </p>
+          </Link>
+          <Link
+            to="/admin/seller-applications"
+            className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
+          >
+            <Users className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Seller applications</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Review, approve or reject seller sign-up requests.
             </p>
           </Link>
           <Link
             to="/admin/products"
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
-            <Activity className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Moderate catalog</h3>
+            <Package className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Product approvals</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Hide or remove any product across the platform.
+              Approve or reject seller product listings.
+            </p>
+          </Link>
+          <Link
+            to="/admin/payments"
+            className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
+          >
+            <Activity className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Payment verifications</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Confirm buyer MoMo transaction references.
+            </p>
+          </Link>
+          <Link
+            to="/admin/withdrawals"
+            className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
+          >
+            <ShoppingBag className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Withdrawal requests</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Process seller payout requests manually.
+            </p>
+          </Link>
+          <Link
+            to="/admin/seller-boosts"
+            className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
+          >
+            <Activity className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Seller boosts</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Set Featured, Top Seller, or Sponsored tiers.
+            </p>
+          </Link>
+          <Link
+            to="/super-admin/policies"
+            className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
+          >
+            <Activity className="h-6 w-6 text-gold mb-3" />
+            <h3 className="font-display font-semibold">Manage policies</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Update legal documents and platform agreements.
             </p>
           </Link>
         </TabsContent>
@@ -177,7 +227,7 @@ function SuperAdminDashboard() {
               </p>
             </div>
             <Badge variant="outline">
-              {applications.filter((app) => app.status === "pending").length} pending
+              {applications.filter((app) => "pending" === app.status).length} pending
             </Badge>
           </div>
           {appsLoading ? (

@@ -306,7 +306,7 @@ function ProfilePage() {
             </div>
           </Link>
         )}
-        {roles.includes("admin") && (
+        {(roles.includes("admin") || roles.includes("super_admin")) && (
           <Link
             to="/admin/dashboard"
             className="bg-card border border-border rounded-2xl p-4 hover:border-gold/40 hover:shadow-elegant transition-all flex items-center gap-3"

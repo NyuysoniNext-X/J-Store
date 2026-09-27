@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, Users, Package, ShoppingBag, Loader2, Trash2, UserPlus } from "lucide-react";
+import {
+  Shield,
+  Users,
+  Package,
+  ShoppingBag,
+  Loader2,
+  Trash2,
+  UserPlus,
+  ClipboardList,
+  Wallet,
+  ArrowDownToLine,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AppRole } from "@/lib/auth";
@@ -57,6 +68,50 @@ function AdminDashboard() {
     },
   });
 
+  const { data: pendingSellerApps = 0 } = useQuery({
+    queryKey: ["admin-pending-seller-apps"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("seller_applications")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+  });
+
+  const { data: pendingPayments = 0 } = useQuery({
+    queryKey: ["admin-pending-payments"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("payment_verifications")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+  });
+
+  const { data: pendingWithdrawals = 0 } = useQuery({
+    queryKey: ["admin-pending-withdrawals"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("withdrawal_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+  });
+
+  const { data: pendingProducts = 0 } = useQuery({
+    queryKey: ["admin-pending-products"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("approved", false);
+      return count ?? 0;
+    },
+  });
+
   const rolesByUser = new Map<string, AppRole[]>();
   for (const r of allRoles) {
     const arr = rolesByUser.get(r.user_id) ?? [];
@@ -83,10 +138,17 @@ function AdminDashboard() {
         .eq("user_id", userId)
         .eq("role", role);
       if (error) throw error;
+      return { userId, role };
     },
     onSuccess: (_d, v) => {
       toast.success(`Revoked ${v.role}`);
       qc.invalidateQueries({ queryKey: ["admin-roles"] });
+      // Force role refresh for all clients - trigger a realtime event
+      // by updating the profile timestamp (non-destructive trigger)
+      void supabase
+        .from("profiles")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", v.userId);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -125,6 +187,92 @@ function AdminDashboard() {
             <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Quick-action nav cards */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Link
+          to="/admin/seller-applications"
+          className="bg-card border border-border rounded-2xl p-5 hover:border-gold/40 transition-colors group"
+        >
+          <div className="flex items-start justify-between">
+            <ClipboardList className="h-5 w-5 text-gold mb-3" />
+            {pendingSellerApps > 0 && (
+              <Badge className="bg-amber-500 text-white text-xs">{pendingSellerApps}</Badge>
+            )}
+          </div>
+          <p className="font-display font-semibold group-hover:text-gold transition-colors">
+            Seller applications
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Review, approve or reject seller sign-up requests.
+          </p>
+        </Link>
+        <Link
+          to="/admin/products"
+          className="bg-card border border-border rounded-2xl p-5 hover:border-gold/40 transition-colors group"
+        >
+          <div className="flex items-start justify-between">
+            <Package className="h-5 w-5 text-gold mb-3" />
+            {pendingProducts > 0 && (
+              <Badge className="bg-amber-500 text-white text-xs">{pendingProducts}</Badge>
+            )}
+          </div>
+          <p className="font-display font-semibold group-hover:text-gold transition-colors">
+            Product approvals
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Approve or reject seller product listings.
+          </p>
+        </Link>
+        <Link
+          to="/admin/payments"
+          className="bg-card border border-border rounded-2xl p-5 hover:border-gold/40 transition-colors group"
+        >
+          <div className="flex items-start justify-between">
+            <Wallet className="h-5 w-5 text-gold mb-3" />
+            {pendingPayments > 0 && (
+              <Badge className="bg-amber-500 text-white text-xs">{pendingPayments}</Badge>
+            )}
+          </div>
+          <p className="font-display font-semibold group-hover:text-gold transition-colors">
+            Payment verifications
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Confirm buyer MoMo transaction references.
+          </p>
+        </Link>
+        <Link
+          to="/admin/withdrawals"
+          className="bg-card border border-border rounded-2xl p-5 hover:border-gold/40 transition-colors group"
+        >
+          <div className="flex items-start justify-between">
+            <ArrowDownToLine className="h-5 w-5 text-gold mb-3" />
+            {pendingWithdrawals > 0 && (
+              <Badge className="bg-amber-500 text-white text-xs">{pendingWithdrawals}</Badge>
+            )}
+          </div>
+          <p className="font-display font-semibold group-hover:text-gold transition-colors">
+            Withdrawal requests
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Process seller payout requests manually.
+          </p>
+        </Link>
+        <Link
+          to="/admin/users"
+          className="bg-card border border-border rounded-2xl p-5 hover:border-gold/40 transition-colors group"
+        >
+          <div className="flex items-start justify-between">
+            <Users className="h-5 w-5 text-gold mb-3" />
+          </div>
+          <p className="font-display font-semibold group-hover:text-gold transition-colors">
+            User & role management
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Manage all users and their roles in detail.
+          </p>
+        </Link>
       </div>
 
       <div className="bg-card border border-border rounded-3xl p-6">
@@ -178,7 +326,7 @@ function AdminDashboard() {
                         </div>
                       </td>
                       <td className="py-3 text-right whitespace-nowrap">
-                        {!r.includes("seller") && (
+                        {!r.includes("seller") ? (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -186,6 +334,15 @@ function AdminDashboard() {
                             onClick={() => grant.mutate({ userId: p.id, role: "seller" })}
                           >
                             <UserPlus className="h-3 w-3 mr-1" /> Seller
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs text-destructive"
+                            onClick={() => revoke.mutate({ userId: p.id, role: "seller" })}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" /> Revoke seller
                           </Button>
                         )}
                         {canManageAdmins && !isAdmin && (
@@ -205,7 +362,7 @@ function AdminDashboard() {
                             className="text-xs text-destructive"
                             onClick={() => revoke.mutate({ userId: p.id, role: "admin" })}
                           >
-                            <Trash2 className="h-3 w-3 mr-1" /> Admin
+                            <Trash2 className="h-3 w-3 mr-1" /> Revoke admin
                           </Button>
                         )}
                       </td>

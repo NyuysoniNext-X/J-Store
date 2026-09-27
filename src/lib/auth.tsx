@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Set up listener FIRST to avoid missing the initial session
+    // 1. Set up auth listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, sess) => {
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // 2. THEN get existing session
+    // 2. Get existing session
     supabase.auth.getSession().then(({ data: { session: sess } }) => {
       setSession(sess);
       setUser(sess?.user ?? null);
@@ -64,6 +64,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // 3. Separate useEffect for realtime role changes (depends on user.id)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const roleChannel = supabase
+      .channel(`user-roles-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_roles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Role change detected:", payload);
+          // Role changed, refresh immediately
+          void fetchRoles(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void roleChannel.unsubscribe();
+    };
+  }, [user?.id]);
 
   async function fetchRoles(userId: string) {
     const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
@@ -91,6 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
+    // Force navigation to home after sign out
+    window.location.href = '/';
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
