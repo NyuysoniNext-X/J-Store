@@ -24,7 +24,8 @@ export const Route = createFileRoute("/_authenticated/_admin/admin/payments")({
 
 type Verification = {
   id: string;
-  order_id: string;
+  order_id: string | null;
+  order_group_id: string | null;
   buyer_id: string;
   amount: number;
   payment_method: string;
@@ -61,19 +62,37 @@ function AdminPayments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payment_verifications")
-        .select("*, orders(order_number), profiles(display_name)")
+        .select("*, orders(order_number), order_groups(group_number)")
         .order("submitted_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((v: Record<string, unknown>) => ({
+      const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+      const buyerIds = [...new Set(rows.map((v) => v.buyer_id as string))];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", buyerIds);
+      const names = new Map((profs ?? []).map((p) => [p.id, p.display_name]));
+      return rows.map((v) => ({
         ...v,
-        order_number: (v.orders as Record<string, unknown> | null)?.order_number as string | undefined,
-        buyer_email: (v.profiles as Record<string, unknown> | null)?.display_name as string | undefined,
-      })) as Verification[];
+        order_number: ((v.orders as Record<string, unknown> | null)?.order_number ??
+          (v.order_groups as Record<string, unknown> | null)?.group_number) as string | undefined,
+        buyer_email: (names.get(v.buyer_id as string) ?? undefined) as string | undefined,
+      })) as unknown as Verification[];
     },
   });
 
   const confirm = useMutation({
     mutationFn: async (v: Verification) => {
+      // New checkouts: one shared function confirms the whole order group (every
+      // per-store order, the escrow status) and notifies the buyer.
+      if (v.order_group_id) {
+        const { error } = await supabase.rpc("confirm_order_group_payment", {
+          p_group: v.order_group_id,
+        });
+        if (error) throw error;
+        return;
+      }
+      // Legacy single-order payments
       // Mark verification confirmed
       const { error: vErr } = await supabase
         .from("payment_verifications")
@@ -89,7 +108,7 @@ function AdminPayments() {
       const { error: oErr } = await supabase
         .from("orders")
         .update({ status: "confirmed" })
-        .eq("id", v.order_id);
+        .eq("id", v.order_id as string);
       if (oErr) throw oErr;
 
       // Notify buyer
@@ -97,7 +116,6 @@ function AdminPayments() {
         user_id: v.buyer_id,
         title: "Payment confirmed ✅",
         body: `Your payment of ${formatXAF(v.amount)} has been verified. Your order is now being processed.`,
-        type: "payment_confirmed",
       });
     },
     onSuccess: () => {
@@ -126,7 +144,6 @@ function AdminPayments() {
         body: reason.trim()
           ? `We could not verify your transaction: ${reason}. Please contact support or resubmit.`
           : "We could not verify your payment reference. Please contact support.",
-        type: "payment_rejected",
       });
     },
     onSuccess: () => {
@@ -166,6 +183,8 @@ function AdminPayments() {
           </Button>
         </div>
       </div>
+
+      <AttentionPanel />
 
       {/* Info banner */}
       <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-4 flex items-start gap-3 text-sm">
@@ -224,7 +243,7 @@ function AdminPayments() {
                       {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
                     </Badge>
                     <span className="text-xs font-mono text-muted-foreground">
-                      Order #{v.order_number ?? v.order_id.slice(0, 8)}
+                      Order #{v.order_number ?? (v.order_id ?? v.order_group_id ?? "").slice(0, 8)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(v.submitted_at).toLocaleString()}
@@ -295,6 +314,132 @@ function AdminPayments() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type AttentionRow = {
+  id: string;
+  provider: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  needs_review: boolean;
+  review_note: string | null;
+  failure_reason: string | null;
+  payer_phone: string | null;
+  order_groups: { group_number: string } | null;
+};
+
+// Instant (MTN/Orange API) payments that are stuck or need a human decision.
+function AttentionPanel() {
+  const qc = useQueryClient();
+  const { data: rows = [], isFetching, refetch } = useQuery({
+    queryKey: ["payment-attention"],
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("payment_attempts")
+        .select(
+          "id, provider, amount, status, created_at, needs_review, review_note, failure_reason, payer_phone, order_groups(group_number)",
+        )
+        .or(`needs_review.eq.true,and(status.eq.pending,created_at.lt.${cutoff})`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as unknown as AttentionRow[];
+    },
+    refetchInterval: 60_000,
+  });
+
+  const act = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: "recheck" | "resolve" }) => {
+      const { data, error } = await supabase.functions.invoke(`payments/${action}`, {
+        body: { attempt_id: id },
+      });
+      if (error || !data) throw new Error("Request failed. Please try again.");
+      if (data.error) throw new Error(data.error);
+      return { action, data };
+    },
+    onSuccess: ({ action, data }) => {
+      toast.success(
+        action === "resolve" ? "Marked as resolved" : `Re-checked — payment is now: ${data.status}`,
+      );
+      qc.invalidateQueries({ queryKey: ["payment-attention"] });
+      qc.invalidateQueries({ queryKey: ["admin-payment-verifications"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const label = (p: string) => (p === "mtn" ? "MTN MoMo" : p === "orange" ? "Orange Money" : "Test");
+
+  return (
+    <div
+      className={`mb-6 rounded-2xl border px-5 py-4 ${
+        rows.length > 0 ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">
+          Instant payments needing attention{rows.length > 0 ? ` (${rows.length})` : ""}
+        </p>
+        <Button variant="ghost" size="sm" className="h-8" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh
+        </Button>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground mt-1">
+          Nothing stuck — all instant payments are confirmed or still within the normal waiting time.
+        </p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {rows.map((r) => {
+            const mins = Math.round((Date.now() - new Date(r.created_at).getTime()) / 60000);
+            return (
+              <div
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    #{r.order_groups?.group_number ?? r.id.slice(0, 8)} · {label(r.provider)} ·{" "}
+                    {formatXAF(r.amount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.status} · started {mins} min ago{r.payer_phone ? ` · ${r.payer_phone}` : ""}
+                  </p>
+                  {r.review_note && (
+                    <p className="text-xs text-destructive mt-1">{r.review_note}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {(r.status === "pending" || r.status === "expired") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full h-8 text-xs"
+                      disabled={act.isPending}
+                      onClick={() => act.mutate({ id: r.id, action: "recheck" })}
+                    >
+                      Re-check now
+                    </Button>
+                  )}
+                  {r.needs_review && (
+                    <Button
+                      size="sm"
+                      className="rounded-full h-8 text-xs"
+                      disabled={act.isPending}
+                      onClick={() => act.mutate({ id: r.id, action: "resolve" })}
+                    >
+                      Mark resolved
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

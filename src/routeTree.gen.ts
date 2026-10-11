@@ -16,6 +16,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OrderSuccessRouteImport } from './routes/order-success'
+import { Route as PaymentReturnRouteImport } from './routes/payment-return'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as WishlistRouteImport } from './routes/wishlist'
@@ -50,7 +51,6 @@ import { Route as AuthenticatedSellerSellerProductsRouteImport } from './routes/
 import { Route as AuthenticatedSellerSellerWalletRouteImport } from './routes/_authenticated/_seller/seller.wallet'
 import { Route as AuthenticatedSuper_adminSuperAdminDashboardRouteImport } from './routes/_authenticated/_super_admin/super-admin.dashboard'
 import { Route as AuthenticatedSuper_adminSuperAdminPoliciesRouteImport } from './routes/_authenticated/_super_admin/super-admin.policies'
-import { Route as AuthenticatedSellerSellerProductsOLDRouteImport } from './routes/_authenticated/_seller/seller.products.OLD'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +84,11 @@ const LoginRoute = LoginRouteImport.update({
 const OrderSuccessRoute = OrderSuccessRouteImport.update({
   id: '/order-success',
   path: '/order-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentReturnRoute = PaymentReturnRouteImport.update({
+  id: '/payment-return',
+  path: '/payment-return',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopRoute = ShopRouteImport.update({
@@ -268,12 +273,6 @@ const AuthenticatedSuper_adminSuperAdminPoliciesRoute =
     path: '/super-admin/policies',
     getParentRoute: () => AuthenticatedSuper_adminRoute,
   } as any)
-const AuthenticatedSellerSellerProductsOLDRoute =
-  AuthenticatedSellerSellerProductsOLDRouteImport.update({
-    id: '/OLD',
-    path: '/OLD',
-    getParentRoute: () => AuthenticatedSellerSellerProductsRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -282,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/order-success': typeof OrderSuccessRoute
+  '/payment-return': typeof PaymentReturnRoute
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/wishlist': typeof WishlistRoute
@@ -308,11 +308,10 @@ export interface FileRoutesByFullPath {
   '/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/seller/products': typeof AuthenticatedSellerSellerProductsRoute
   '/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
   '/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
-  '/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -321,6 +320,7 @@ export interface FileRoutesByTo {
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/order-success': typeof OrderSuccessRoute
+  '/payment-return': typeof PaymentReturnRoute
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/wishlist': typeof WishlistRoute
@@ -347,11 +347,10 @@ export interface FileRoutesByTo {
   '/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/seller/products': typeof AuthenticatedSellerSellerProductsRoute
   '/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
   '/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
-  '/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -362,6 +361,7 @@ export interface FileRoutesById {
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/order-success': typeof OrderSuccessRoute
+  '/payment-return': typeof PaymentReturnRoute
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/wishlist': typeof WishlistRoute
@@ -392,11 +392,10 @@ export interface FileRoutesById {
   '/_authenticated/_admin/admin/withdrawals': typeof AuthenticatedAdminAdminWithdrawalsRoute
   '/_authenticated/_partner/partner/dashboard': typeof AuthenticatedPartnerPartnerDashboardRoute
   '/_authenticated/_seller/seller/dashboard': typeof AuthenticatedSellerSellerDashboardRoute
-  '/_authenticated/_seller/seller/products': typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  '/_authenticated/_seller/seller/products': typeof AuthenticatedSellerSellerProductsRoute
   '/_authenticated/_seller/seller/wallet': typeof AuthenticatedSellerSellerWalletRoute
   '/_authenticated/_super_admin/super-admin/dashboard': typeof AuthenticatedSuper_adminSuperAdminDashboardRoute
   '/_authenticated/_super_admin/super-admin/policies': typeof AuthenticatedSuper_adminSuperAdminPoliciesRoute
-  '/_authenticated/_seller/seller/products/OLD': typeof AuthenticatedSellerSellerProductsOLDRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -407,6 +406,7 @@ export interface FileRouteTypes {
     | '/help'
     | '/login'
     | '/order-success'
+    | '/payment-return'
     | '/shop'
     | '/signup'
     | '/wishlist'
@@ -437,7 +437,6 @@ export interface FileRouteTypes {
     | '/seller/wallet'
     | '/super-admin/dashboard'
     | '/super-admin/policies'
-    | '/seller/products/OLD'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -446,6 +445,7 @@ export interface FileRouteTypes {
     | '/help'
     | '/login'
     | '/order-success'
+    | '/payment-return'
     | '/shop'
     | '/signup'
     | '/wishlist'
@@ -476,7 +476,6 @@ export interface FileRouteTypes {
     | '/seller/wallet'
     | '/super-admin/dashboard'
     | '/super-admin/policies'
-    | '/seller/products/OLD'
   id:
     | '__root__'
     | '/'
@@ -486,6 +485,7 @@ export interface FileRouteTypes {
     | '/help'
     | '/login'
     | '/order-success'
+    | '/payment-return'
     | '/shop'
     | '/signup'
     | '/wishlist'
@@ -520,7 +520,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_seller/seller/wallet'
     | '/_authenticated/_super_admin/super-admin/dashboard'
     | '/_authenticated/_super_admin/super-admin/policies'
-    | '/_authenticated/_seller/seller/products/OLD'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -531,6 +530,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
   OrderSuccessRoute: typeof OrderSuccessRoute
+  PaymentReturnRoute: typeof PaymentReturnRoute
   ShopRoute: typeof ShopRoute
   SignupRoute: typeof SignupRoute
   WishlistRoute: typeof WishlistRoute
@@ -595,6 +595,13 @@ declare module '@tanstack/react-router' {
       path: '/order-success'
       fullPath: '/order-success'
       preLoaderRoute: typeof OrderSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-return': {
+      id: '/payment-return'
+      path: '/payment-return'
+      fullPath: '/payment-return'
+      preLoaderRoute: typeof PaymentReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop': {
@@ -835,13 +842,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuper_adminSuperAdminPoliciesRouteImport
       parentRoute: typeof AuthenticatedSuper_adminRoute
     }
-    '/_authenticated/_seller/seller/products/OLD': {
-      id: '/_authenticated/_seller/seller/products/OLD'
-      path: '/OLD'
-      fullPath: '/seller/products/OLD'
-      preLoaderRoute: typeof AuthenticatedSellerSellerProductsOLDRouteImport
-      parentRoute: typeof AuthenticatedSellerSellerProductsRoute
-    }
   }
 }
 
@@ -883,24 +883,9 @@ const AuthenticatedPartnerRouteChildren: AuthenticatedPartnerRouteChildren = {
 const AuthenticatedPartnerRouteWithChildren =
   AuthenticatedPartnerRoute._addFileChildren(AuthenticatedPartnerRouteChildren)
 
-interface AuthenticatedSellerSellerProductsRouteChildren {
-  AuthenticatedSellerSellerProductsOLDRoute: typeof AuthenticatedSellerSellerProductsOLDRoute
-}
-
-const AuthenticatedSellerSellerProductsRouteChildren: AuthenticatedSellerSellerProductsRouteChildren =
-  {
-    AuthenticatedSellerSellerProductsOLDRoute:
-      AuthenticatedSellerSellerProductsOLDRoute,
-  }
-
-const AuthenticatedSellerSellerProductsRouteWithChildren =
-  AuthenticatedSellerSellerProductsRoute._addFileChildren(
-    AuthenticatedSellerSellerProductsRouteChildren,
-  )
-
 interface AuthenticatedSellerRouteChildren {
   AuthenticatedSellerSellerDashboardRoute: typeof AuthenticatedSellerSellerDashboardRoute
-  AuthenticatedSellerSellerProductsRoute: typeof AuthenticatedSellerSellerProductsRouteWithChildren
+  AuthenticatedSellerSellerProductsRoute: typeof AuthenticatedSellerSellerProductsRoute
   AuthenticatedSellerSellerWalletRoute: typeof AuthenticatedSellerSellerWalletRoute
 }
 
@@ -908,7 +893,7 @@ const AuthenticatedSellerRouteChildren: AuthenticatedSellerRouteChildren = {
   AuthenticatedSellerSellerDashboardRoute:
     AuthenticatedSellerSellerDashboardRoute,
   AuthenticatedSellerSellerProductsRoute:
-    AuthenticatedSellerSellerProductsRouteWithChildren,
+    AuthenticatedSellerSellerProductsRoute,
   AuthenticatedSellerSellerWalletRoute: AuthenticatedSellerSellerWalletRoute,
 }
 
@@ -967,6 +952,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
   OrderSuccessRoute: OrderSuccessRoute,
+  PaymentReturnRoute: PaymentReturnRoute,
   ShopRoute: ShopRoute,
   SignupRoute: SignupRoute,
   WishlistRoute: WishlistRoute,

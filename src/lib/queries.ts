@@ -12,66 +12,34 @@ import { BOOST_TIER_ORDER, type SellerBoostTier } from "@/lib/types";
 
 // ── Plain async fetchers (for router loaders — loaders can't call hooks) ─────
 
-/** Fetch single product by ID - only returns if approved and active */
+/** Fetch single product by ID — only returns it if approved. */
 export async function fetchProduct(id: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", id)
-      .eq("active", true)
-      .eq("approved", true)
-      .single();
-    
-    if (error || !data) return null;
-    
-    return {
-      id: data.id,
-      name: data.name,
-      price: data.price,
-      oldPrice: undefined,
-      rating: 4.5,
-      reviews: 0,
-      category: data.category,
-      seller: "Seller",
-      image: "hsl(25 60% 55%)",
-      imageSrc: data.image_url ?? undefined,
-      description: data.description ?? "",
-    };
-  } catch {
+    return await productsService.getPublicById(id);
+  } catch (err) {
+    console.error("Failed to fetch product:", err);
     return null;
   }
 }
 
-/** Fetch all approved and active products - NO MOCK FALLBACK */
+/** Fetch all approved products (title/base_price/status schema, via productsService). */
 export async function fetchProducts(): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("active", true)
-      .eq("approved", true);
-    
-    if (error) {
-      console.error("Failed to fetch products:", error);
-      return [];
-    }
-    
-    return (data ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      oldPrice: undefined,
-      rating: 4.5,
-      reviews: 0,
-      category: p.category,
-      seller: "Seller",
-      image: "hsl(25 60% 55%)",
-      imageSrc: p.image_url ?? undefined,
-      description: p.description ?? "",
-    }));
+    return await productsService.listPublic();
   } catch (err) {
     console.error("Failed to fetch products:", err);
+    return [];
+  }
+}
+
+/** Top-selling product ids (last 90 days), computed server-side from real orders. */
+export async function fetchBestSellerIds(limit = 8): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc("get_best_sellers", { p_limit: limit });
+    if (error) throw error;
+    return (data ?? []).map((r) => r.product_id);
+  } catch (err) {
+    console.error("Failed to fetch best sellers:", err);
     return [];
   }
 }
@@ -153,23 +121,21 @@ export function useReviews(productId: string): UseQueryResult<Review[]> {
 // ── Seller boost helpers ──────────────────────────────────────────────────
 
 export type ActiveBoost = {
-  seller_id: string;
+  product_id: string;
   tier: SellerBoostTier;
-  ends_at: string | null;
 };
 
-/** Fetch all currently active boosts (for shop sorting / badges). */
+/**
+ * Active boosts per approved product (best tier of the owning store). Goes
+ * through a database function because buyers can't read seller_boosts directly.
+ */
 export async function fetchActiveBoosts(): Promise<ActiveBoost[]> {
   try {
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from("seller_boosts")
-      .select("seller_id, tier, ends_at")
-      .eq("is_active", true)
-      .or(`ends_at.is.null,ends_at.gt.${now}`);
+    const { data, error } = await supabase.rpc("get_active_product_boosts");
     if (error) throw error;
     return (data ?? []) as ActiveBoost[];
-  } catch {
+  } catch (err) {
+    console.error("Failed to fetch boosts:", err);
     return [];
   }
 }
@@ -182,13 +148,13 @@ export function useActiveBoosts(): UseQueryResult<ActiveBoost[]> {
   });
 }
 
-/** Build a map of seller_id → highest tier for quick lookup. */
+/** Map of product_id → boost tier for quick lookup. */
 export function buildBoostMap(boosts: ActiveBoost[]): Map<string, SellerBoostTier> {
   const m = new Map<string, SellerBoostTier>();
   for (const b of boosts) {
-    const existing = m.get(b.seller_id);
+    const existing = m.get(b.product_id);
     if (!existing || BOOST_TIER_ORDER[b.tier] < BOOST_TIER_ORDER[existing]) {
-      m.set(b.seller_id, b.tier);
+      m.set(b.product_id, b.tier);
     }
   }
   return m;

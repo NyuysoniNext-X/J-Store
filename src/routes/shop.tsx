@@ -2,7 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { fetchCategories, fetchProducts, useCategories, fetchActiveBoosts, buildBoostMap } from "@/lib/queries";
+import {
+  fetchCategories,
+  fetchProducts,
+  useCategories,
+  fetchActiveBoosts,
+  buildBoostMap,
+} from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { BOOST_TIER_ORDER, type SellerBoostTier } from "@/lib/types";
 import type { Product } from "@/lib/mock-data";
@@ -36,7 +42,7 @@ export const Route = createFileRoute("/shop")({
 });
 
 const SORTS = [
-  { id: "featured", label: "Featured" },
+  { id: "featured", label: "Recommended" },
   { id: "price-asc", label: "Price: low → high" },
   { id: "price-desc", label: "Price: high → low" },
   { id: "rating", label: "Top rated" },
@@ -70,7 +76,11 @@ function ShopPage() {
           p.description.toLowerCase().includes(q),
       );
     }
-    if (search.category) list = list.filter((p) => p.category.toLowerCase() === search.category);
+    if (search.category) {
+      const wanted =
+        CATEGORIES.find((c) => c.slug === search.category)?.name.toLowerCase() ?? search.category;
+      list = list.filter((p) => p.category.toLowerCase() === wanted);
+    }
     list = list.filter((p) => p.price <= maxPrice);
 
     const sort = search.sort ?? "featured";
@@ -90,7 +100,7 @@ function ShopPage() {
       list.sort((a, b) => b.rating - a.rating);
     }
     return list;
-  }, [products, search.q, search.category, search.sort, maxPrice, boostMap]);
+  }, [products, search.q, CATEGORIES, search.category, search.sort, maxPrice, boostMap]);
 
   const Sidebar = (
     <aside className="space-y-8 text-sm">
@@ -113,29 +123,6 @@ function ShopPage() {
             </button>
           ))}
         </div>
-      </div>
-      <div>
-        <h4 className="font-display font-semibold mb-3">Price</h4>
-        <input
-          type="range"
-          min={5000}
-          max={100000}
-          step={1000}
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(+e.target.value)}
-          className="w-full accent-[var(--gold)]"
-        />
-        <p className="text-xs text-muted-foreground mt-2">
-          Up to {new Intl.NumberFormat("fr-FR").format(maxPrice)} FCFA
-        </p>
-      </div>
-      <div>
-        <h4 className="font-display font-semibold mb-3">Rating</h4>
-        {[4.5, 4, 3.5].map((r) => (
-          <label key={r} className="flex items-center gap-2 py-1 cursor-pointer">
-            <input type="checkbox" className="accent-[var(--gold)]" /> {r}★ & up
-          </label>
-        ))}
       </div>
     </aside>
   );

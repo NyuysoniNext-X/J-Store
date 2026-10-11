@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/delivery/dashboard")({
 });
 
 type DeliveryOrder = Tables<"deliveries"> & {
-  order: Pick<Tables<"orders">, "delivery_address" | "total"> | null;
+  order: { total: number; address: string } | null;
 };
 
 type DeliveryAction = {
@@ -29,12 +29,7 @@ type DeliveryAction = {
   previousStatus: Tables<"deliveries">["status"];
 };
 
-function formatAddress(address: Json | null): string {
-  if (typeof address === "string") return address;
-  if (!address || typeof address !== "object" || Array.isArray(address)) {
-    return "Address unavailable";
-  }
-  const parts = [address.address, address.quarter, address.landmark, address.city];
+function formatAddress(parts: Array<string | null | undefined>): string {
   return (
     parts
       .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
@@ -72,13 +67,33 @@ function DeliveryDashboard() {
   } = useQuery({
     queryKey: ["delivery-orders", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("deliveries")
-        .select("*, order:orders(delivery_address,total)")
-        .in("status", ["unassigned", "assigned", "picked_up", "in_transit"])
-        .order("created_at", { ascending: false });
+      // Couriers can't read orders/order_groups directly (buyer privacy), so
+      // this goes through a function that returns only what a delivery needs.
+      const { data, error } = await supabase.rpc("get_courier_deliveries");
       if (error) throw error;
-      return data;
+      return (data ?? []).map(
+        ({
+          order_total,
+          ship_recipient,
+          ship_phone,
+          ship_city,
+          ship_quarter,
+          ship_landmark,
+          ...delivery
+        }): DeliveryOrder => ({
+          ...delivery,
+          order: {
+            total: order_total,
+            address: formatAddress([
+              ship_recipient,
+              ship_phone,
+              ship_landmark,
+              ship_quarter,
+              ship_city,
+            ]),
+          },
+        }),
+      );
     },
     enabled: !!user && canAccess,
   });
@@ -239,7 +254,7 @@ function OrderColumn({
                   <p className="font-semibold">#{order.order_id.slice(0, 8)}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" />{" "}
-                    {formatAddress(order.order?.delivery_address ?? null)}
+                    {order.order?.address ?? "Address unavailable"}
                   </p>
                 </div>
                 <Badge variant="outline" className="capitalize">

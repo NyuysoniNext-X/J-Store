@@ -21,14 +21,20 @@ import {
 import heroImg from "@/assets/hero.jpg";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { fetchProducts } from "@/lib/queries";
+import { buildBoostMap, fetchActiveBoosts, fetchBestSellerIds, fetchProducts } from "@/lib/queries";
+import { BOOST_TIER_ORDER } from "@/lib/types";
 import type { Product } from "@/lib/mock-data";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   component: Home,
   loader: async () => {
-    return fetchProducts();
+    const [products, bestSellerIds, boosts] = await Promise.all([
+      fetchProducts(),
+      fetchBestSellerIds(),
+      fetchActiveBoosts(),
+    ]);
+    return { products, bestSellerIds, boosts };
   },
   head: () => ({
     meta: [
@@ -36,7 +42,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Discover premium products from verified African sellers. Pay with MoMo, Orange Money or card. Shipped from Douala.",
+          "Discover premium products from verified Cameroonian sellers. Pay with MoMo, Orange Money or card. Shipped from Douala.",
       },
     ],
   }),
@@ -57,16 +63,20 @@ const SCROLL_CATEGORIES = [
 
 function Home() {
   const { t } = useI18n();
-  const PRODUCTS = Route.useLoaderData();
-  // Same placeholder slicing as before mock-data — there's no real
-  // "trending"/"bestseller" ranking in the schema yet (no sales-count or
-  // view-count-based ordering wired up), so this stays arbitrary until a
-  // later phase adds real signals to rank by.
-  const featured = PRODUCTS.slice(0, 8);
-  const trending = PRODUCTS.slice(8, 16);
-  const newArrivals = PRODUCTS.slice(4, 12);
-  const bestSellers = PRODUCTS.slice(2, 10);
-  const schoolProducts = PRODUCTS.filter((p) => p.category === "School").slice(0, 8);
+  const { products: PRODUCTS, bestSellerIds, boosts } = Route.useLoaderData();
+  // PRODUCTS arrives newest-first, so the first 8 are the latest arrivals.
+  // Featured = products from sellers with an active boost, highest tier first
+  // (sponsored → top seller → featured). Hidden when nobody is boosted.
+  const boostMap = buildBoostMap(boosts);
+  const featured = PRODUCTS.filter((p) => boostMap.has(p.id))
+    .sort((a, b) => BOOST_TIER_ORDER[boostMap.get(a.id)!] - BOOST_TIER_ORDER[boostMap.get(b.id)!])
+    .slice(0, 8);
+  const newArrivals = PRODUCTS.slice(0, 8);
+  // Best sellers = real units sold (server-side), in sold order. Hidden until
+  // at least 4 products have sales, rather than showing a fake/empty list.
+  const bestSellers = bestSellerIds
+    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p));
 
   return (
     <div>
@@ -199,107 +209,26 @@ function Home() {
         </div>
       </section>
 
-      <ProductSection
-        title={t("section.featured")}
-        subtitle="Hand-picked premium goods"
-        products={featured}
-      />
+      {featured.length > 0 && (
+        <ProductSection
+          title={t("section.featured")}
+          subtitle="Hand-picked premium goods"
+          products={featured}
+        />
+      )}
 
-      {/* Back to School — Rentrée scolaire */}
-      <section className="mx-auto max-w-[1536px] px-6 my-12">
-        <div className="rounded-3xl bg-gradient-to-br from-gold/15 via-card to-navy/5 border border-gold/20 p-8 md:p-12 overflow-hidden relative">
-          <div className="absolute -right-16 -bottom-16 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
-          <div className="absolute -left-10 -top-10 h-48 w-48 rounded-full bg-navy/10 blur-3xl" />
-          <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
-            <div>
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-3">
-                <GraduationCap className="h-4 w-4" /> Rentrée scolaire · Septembre
-              </span>
-              <h2 className="font-display text-4xl md:text-5xl font-bold leading-tight">
-                Tout pour la <span className="text-gradient-gold">rentrée scolaire</span> 2026
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-lg">
-                Cahiers, sacs, uniformes, calculatrices et manuels — préparez la rentrée de vos
-                enfants avec les meilleures fournitures, livrées partout au Cameroun.
-              </p>
-              <div className="flex flex-wrap gap-3 mt-6">
-                <Button
-                  asChild
-                  size="lg"
-                  className="rounded-full bg-emerald text-emerald-foreground hover:bg-gold hover:text-gold-foreground h-12 px-7"
-                >
-                  <Link to="/shop" search={{ category: "school" }}>
-                    Shop school supplies <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full h-12 px-7 border-gold/30 hover:bg-gold/10"
-                >
-                  <Link to="/shop" search={{ category: "school", sort: "price-asc" }}>
-                    Best prices
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">
-                {[
-                  { icon: BookOpen, label: "Cahiers & manuels" },
-                  { icon: Backpack, label: "Sacs & cartables" },
-                  { icon: Calculator, label: "Calculatrices" },
-                  { icon: GraduationCap, label: "Uniformes" },
-                ].map((f, i) => (
-                  <div
-                    key={i}
-                    className="bg-card/80 backdrop-blur border border-border rounded-xl p-3 text-center"
-                  >
-                    <f.icon className="h-5 w-5 text-gold mx-auto mb-1.5" />
-                    <p className="text-xs font-medium">{f.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {schoolProducts.slice(0, 4).map((p, i) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <ProductCard product={p} index={i} />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <ProductSection
-        title="School essentials · Rentrée"
-        subtitle="Get your kids ready for September"
-        products={schoolProducts}
-        tint
-      />
-
-      <ProductSection
-        title={t("section.trending")}
-        subtitle="What everyone is buying right now"
-        products={trending}
-        tint
-      />
       <ProductSection
         title={t("section.new")}
         subtitle="Fresh drops from our sellers"
         products={newArrivals}
       />
-      <ProductSection
-        title={t("section.best")}
-        subtitle="Tried, loved and recommended"
-        products={bestSellers}
-      />
+      {bestSellers.length >= 4 && (
+        <ProductSection
+          title={t("section.best")}
+          subtitle="Tried, loved and recommended"
+          products={bestSellers}
+        />
+      )}
 
       {/* Testimonials */}
       <section className="bg-secondary/40 border-y border-border">

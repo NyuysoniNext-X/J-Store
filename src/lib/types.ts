@@ -1,4 +1,4 @@
-﻿/** All supported payment method IDs */
+/** All supported payment method IDs */
 export type PaymentMethod = "momo" | "orange" | "card" | "cod";
 
 /** All app roles — mirrors the app_role enum in the database */
@@ -34,13 +34,13 @@ export type ShippingAddress = {
 /** Seller boost/virality tiers */
 export type SellerBoostTier = "normal" | "featured" | "top_seller" | "sponsored";
 
-/** Priority order for boost tiers — higher index = higher priority */
-export const BOOST_TIER_ORDER: SellerBoostTier[] = [
-  "normal",
-  "featured",
-  "top_seller",
-  "sponsored",
-];
+/** Sort priority for boost tiers — LOWER number = shown first. */
+export const BOOST_TIER_ORDER: Record<SellerBoostTier, number> = {
+  sponsored: 0,
+  top_seller: 1,
+  featured: 2,
+  normal: 3,
+};
 
 /** Human-readable labels for boost tiers */
 export const BOOST_TIER_LABELS: Record<SellerBoostTier, string> = {

@@ -34,7 +34,7 @@ type ProductJoinRow = Product & {
 const PUBLIC_SELECT = `
   *,
   categories ( name ),
-  seller_stores!products_store_id_fkey ( store_name ),
+  seller_stores ( store_name ),
   product_images ( url, position ),
   product_variants ( price_override, stock_quantity )
 `;
@@ -117,8 +117,9 @@ export const productsService = {
   },
 
   /**
-   * Creates a product plus its one required default variant (stock lives on
-   * the variant, never on the product row — see product_variants schema).
+   * Creates a draft product plus its one required default variant (stock
+   * lives on the variant, never on the product row). New products must start
+   * as 'draft' (DB trigger) — call submitForReview() to queue it for admins.
    */
   async create(payload: TablesInsert<"products">, initialStock = 0) {
     const { data, error } = await supabase.from("products").insert(payload).select().single();
@@ -135,17 +136,16 @@ export const productsService = {
     return data as Product;
   },
 
-  async update(productId: string, payload: TablesUpdate<"products">) {
-    const { error } = await supabase.from("products").update(payload).eq("id", productId);
+  /** Moves a draft/rejected product into the admin approval queue. */
+  async submitForReview(productId: string) {
+    const { error } = await supabase.rpc("submit_product_for_review", {
+      p_product_id: productId,
+    });
     if (error) throw error;
   },
 
-  /** Soft-delete by archiving — keeps order history intact. */
-  async archive(productId: string) {
-    const { error } = await supabase
-      .from("products")
-      .update({ status: "archived" })
-      .eq("id", productId);
+  async update(productId: string, payload: TablesUpdate<"products">) {
+    const { error } = await supabase.from("products").update(payload).eq("id", productId);
     if (error) throw error;
   },
 

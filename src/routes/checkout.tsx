@@ -86,6 +86,12 @@ function CheckoutPage() {
   const [momoProvider, setMomoProvider] = useState<MomoProvider>("mtn");
   const [transactionRef, setTransactionRef] = useState("");
   const [placing, setPlacing] = useState(false);
+  // "instant" = MTN/Orange prompt via the payments API; "manual" = send money + enter reference.
+  const [payMode, setPayMode] = useState<"instant" | "manual">("instant");
+  const [payerPhone, setPayerPhone] = useState("");
+  // Kept so a failed "pay now" retry reuses the same order instead of creating (and
+  // reserving stock for) a second one.
+  const [groupId, setGroupId] = useState<string | null>(null);
 
   const cityZones = getCity(city);
   const baseFee = cityZones.tiers[zoneIdx]?.fee ?? 0;
@@ -93,8 +99,15 @@ function CheckoutPage() {
   const total = subtotal + shipping;
   const selectedMomo = PLATFORM_MOMO[momoProvider];
 
-  const canSubmit =
-    fullName.trim() && phone.trim() && address.trim() && items.length > 0 && transactionRef.trim();
+  const payerNumber = (payerPhone || phone).replace(/\D/g, "");
+  // Cameroon mobile numbers are 9 digits starting with 6 (optionally prefixed by 237).
+  // Looser while developing (npm run dev) so MTN sandbox test numbers still work.
+  const payerFormatOk = import.meta.env.DEV
+    ? payerNumber.length >= 9
+    : /^(237)?6\d{8}$/.test(payerNumber);
+  const payerOk = momoProvider === "orange" || payerFormatOk;
+  const baseOk = fullName.trim() && phone.trim() && address.trim() && items.length > 0;
+  const canSubmit = payMode === "manual" ? baseOk && transactionRef.trim() : baseOk && payerOk;
 
   async function placeOrder() {
     if (!canSubmit) return;
@@ -106,32 +119,58 @@ function CheckoutPage() {
 
     setPlacing(true);
     try {
-      const { data, error } = await supabase.rpc("place_order", {
-        p_cart: items.map(({ product, qty }) => ({
-          product_id: product.id,
-          quantity: qty,
-        })),
-        p_shipping: {
-          recipient_name: fullName,
-          phone,
-          city,
-          quarter: cityZones.tiers[zoneIdx]?.name ?? city,
-          landmark: address,
-          delivery_fee: shipping,
-        },
-        p_payment_method: `${momoProvider}_momo`,
-        p_transaction_ref: transactionRef.trim(),
-      });
+      const instant = payMode === "instant";
+      const paymentMethod = momoProvider === "mtn" ? "mtn_momo" : "orange_money";
+      let gid = instant ? groupId : null;
+      let groupNumber = "";
+      let groupTotal = total;
 
-      if (error) throw error;
-      if (!data) throw new Error("Order was not created");
-      const result = data as unknown as { group_number: string; total: number };
+      if (!gid) {
+        const { data, error } = await supabase.rpc("place_order", {
+          p_cart: items.map(({ product, qty }) => ({ product_id: product.id, quantity: qty })),
+          p_shipping: {
+            recipient_name: fullName,
+            phone,
+            city,
+            quarter: cityZones.tiers[zoneIdx]?.name ?? city,
+            landmark: address,
+            delivery_fee: shipping,
+          },
+          p_payment_method: paymentMethod,
+          p_transaction_ref: instant ? undefined : transactionRef.trim(),
+          p_flow: instant ? "api" : "manual",
+        });
+        if (error) throw error;
+        if (!data) throw new Error("Order was not created");
+        const result = data as unknown as {
+          order_group_id: string;
+          group_number: string;
+          total: number;
+        };
+        gid = result.order_group_id;
+        groupNumber = result.group_number;
+        groupTotal = result.total;
+        if (instant) setGroupId(gid);
+      }
 
-      clear();
-      nav({
-        to: "/order-success",
-        search: { orderId: result.group_number, total: result.total },
+      if (!instant) {
+        clear();
+        nav({ to: "/order-success", search: { orderId: groupNumber, total: groupTotal } });
+        return;
+      }
+
+      const { data: pay, error: payErr } = await supabase.functions.invoke("payments/initiate", {
+        body: { order_group_id: gid, provider: momoProvider, phone: payerNumber },
       });
+      if (payErr) throw new Error("Could not start the payment. Please try again.");
+      if (pay?.error) throw new Error(pay.error);
+
+      // Cart is emptied on the confirmation page, once the money is confirmed.
+      if (pay?.payment_url) {
+        window.location.href = pay.payment_url; // Orange Money hosted payment page
+        return;
+      }
+      nav({ to: "/payment-return", search: { group: gid } });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to place order";
       toast.error(msg);
@@ -324,83 +363,145 @@ function CheckoutPage() {
                 </div>
               </div>
 
-              {/* How-to card */}
-              <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-4">
-                <p className="text-sm font-semibold">
-                  How to pay with {selectedMomo.label}
-                </p>
-                <ol className="text-sm space-y-3 text-muted-foreground list-none">
-                  <li className="flex gap-3">
-                    <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      1
-                    </span>
-                    Open your {selectedMomo.label} app or dial the USSD code on your phone.
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      2
-                    </span>
-                    <span>
-                      Transfer exactly{" "}
-                      <strong className="text-foreground">{formatXAF(total)}</strong> to:
-                      <span className="flex items-center gap-2 mt-1">
-                        <span className="font-mono text-base font-bold text-foreground">
-                          {selectedMomo.number}
-                        </span>
-                        <button
-                          onClick={copyNumber}
-                          className="text-gold hover:text-gold/70 transition-colors"
-                          aria-label="Copy number"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                      </span>
-                      <span className="text-xs text-muted-foreground block mt-0.5">
-                        Beneficiary: J-STORE.cm
-                      </span>
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      3
-                    </span>
-                    Copy the transaction ID / reference number you receive and paste it below.
-                  </li>
-                </ol>
-
-                {/* Transaction ref input */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    Transaction reference <span className="text-gold">*</span>
-                  </label>
-                  <Input
-                    placeholder="e.g. TXN2026091600123456"
-                    value={transactionRef}
-                    onChange={(e) => setTransactionRef(e.target.value)}
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    The reference ID shown in your {selectedMomo.label} confirmation SMS.
-                  </p>
+              {/* Pay mode */}
+              <div>
+                <p className="text-sm font-medium mb-3">How do you want to pay?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(
+                    [
+                      ["instant", "Pay instantly", "Approve on your phone"],
+                      ["manual", "Send manually", "Transfer, then enter the reference"],
+                    ] as const
+                  ).map(([id, title, sub]) => (
+                    <button
+                      key={id}
+                      onClick={() => setPayMode(id)}
+                      className={`border-2 rounded-xl p-4 text-left text-sm transition-colors ${
+                        payMode === id
+                          ? "border-gold bg-gold/10"
+                          : "border-border hover:border-gold/40"
+                      }`}
+                    >
+                      <span className="font-semibold block">{title}</span>
+                      <span className="text-xs text-muted-foreground">{sub}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Verification notice */}
-              <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-sm text-amber-700 dark:text-amber-400">
-                <Clock className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>
-                  After submitting, our team will verify your transaction within{" "}
-                  <strong>3 hours</strong>. You'll receive a notification when your order is
-                  confirmed.
-                </p>
-              </div>
+              {payMode === "instant" && (
+                <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-3">
+                  {momoProvider === "mtn" ? (
+                    <>
+                      <label className="text-sm font-medium">MTN MoMo number</label>
+                      <Input
+                        inputMode="tel"
+                        placeholder={phone || "6XX XXX XXX"}
+                        value={payerPhone}
+                        onChange={(e) => setPayerPhone(e.target.value)}
+                      />
+                      {!payerFormatOk && (payerPhone.trim() || phone.trim()) && (
+                        <p className="text-xs text-destructive">
+                          Enter a valid MTN number, for example 6XX XXX XXX.
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        We send a payment request to this number. Approve it with your MoMo PIN.
+                        Leave empty to use your delivery phone number.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      You will be taken to Orange Money to approve the payment securely, then
+                      brought back here automatically.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {payMode === "manual" && (
+                <>
+                  {/* How-to card */}
+                  <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-4">
+                    <p className="text-sm font-semibold">How to pay with {selectedMomo.label}</p>
+                    <ol className="text-sm space-y-3 text-muted-foreground list-none">
+                      <li className="flex gap-3">
+                        <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          1
+                        </span>
+                        Open your {selectedMomo.label} app or dial the USSD code on your phone.
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          2
+                        </span>
+                        <span>
+                          Transfer exactly{" "}
+                          <strong className="text-foreground">{formatXAF(total)}</strong> to:
+                          <span className="flex items-center gap-2 mt-1">
+                            <span className="font-mono text-base font-bold text-foreground">
+                              {selectedMomo.number}
+                            </span>
+                            <button
+                              onClick={copyNumber}
+                              className="text-gold hover:text-gold/70 transition-colors"
+                              aria-label="Copy number"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </span>
+                          <span className="text-xs text-muted-foreground block mt-0.5">
+                            Beneficiary: J-STORE.cm
+                          </span>
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          3
+                        </span>
+                        Copy the transaction ID / reference number you receive and paste it below.
+                      </li>
+                    </ol>
+
+                    {/* Transaction ref input */}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        Transaction reference <span className="text-gold">*</span>
+                      </label>
+                      <Input
+                        placeholder="e.g. TXN2026091600123456"
+                        value={transactionRef}
+                        onChange={(e) => setTransactionRef(e.target.value)}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The reference ID shown in your {selectedMomo.label} confirmation SMS.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Verification notice */}
+                  <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-sm text-amber-700 dark:text-amber-400">
+                    <Clock className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>
+                      After submitting, our team will verify your transaction within{" "}
+                      <strong>3 hours</strong>. You'll receive a notification when your order is
+                      confirmed.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {!isAuthenticated && (
                 <div className="flex items-start gap-3 rounded-xl bg-destructive/10 border border-destructive/30 p-4 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <p>
                     Please{" "}
-                    <Link to="/login" search={{ redirect: "/checkout" }} className="underline font-medium">
+                    <Link
+                      to="/login"
+                      search={{ redirect: "/checkout" }}
+                      className="underline font-medium"
+                    >
                       sign in
                     </Link>{" "}
                     to place an order.
@@ -448,7 +549,9 @@ function CheckoutPage() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Placing order…
                   </>
                 ) : (
-                  <>Place order · {formatXAF(total)}</>
+                  <>
+                    {payMode === "instant" ? "Pay now" : "Place order"} · {formatXAF(total)}
+                  </>
                 )}
               </Button>
             )}

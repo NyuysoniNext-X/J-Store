@@ -14,6 +14,17 @@ export const Route = createFileRoute("/_authenticated/_admin/admin/products")({
   head: () => ({ meta: [{ title: "Product moderation — J-STORE.cm" }] }),
 });
 
+type AdminProduct = {
+  id: string;
+  title: string;
+  base_price: number;
+  status: "draft" | "pending_approval" | "approved" | "rejected" | "flagged" | "archived";
+  created_at: string;
+  category: { name: string } | null;
+  seller_stores: { store_name: string } | null;
+  product_variants: { stock_quantity: number }[];
+};
+
 function AdminProducts() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -29,38 +40,38 @@ function AdminProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, category:categories(name)")
+        .select(
+          "id, title, base_price, status, created_at, category:categories(name), seller_stores(store_name), product_variants(stock_quantity)",
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Array<{
-        id: string;
-        name: string;
-        price: number;
-        stock: number;
-        active: boolean;
-        approved: boolean;
-        seller_id: string;
-        created_at: string;
-        category: { name: string } | null;
-      }>;
+      return data as unknown as AdminProduct[];
     },
   });
 
+  // Drafts are the seller's private work-in-progress; only submitted
+  // products (pending_approval) belong in the moderation queue.
   const filtered = products.filter((p) => {
-    if (filter === "pending") return !p.approved;
-    if (filter === "approved") return p.approved;
+    if (filter === "pending") return p.status === "pending_approval";
+    if (filter === "approved") return p.status === "approved";
     return true;
   });
 
-  const pendingCount = products.filter((p) => !p.approved).length;
+  const pendingCount = products.filter((p) => p.status === "pending_approval").length;
 
-  const toggle = useMutation({
-    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      const { error } = await supabase.from("products").update({ active }).eq("id", id);
+  // Hide/Show: no separate visibility flag exists — status alone gates the
+  // storefront (only 'approved' shows), so hiding = archiving.
+  const toggleVisible = useMutation({
+    mutationFn: async ({ id, hide }: { id: string; hide: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({ status: hide ? "archived" : "approved" })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-all-products"] });
+      await qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Visibility updated");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -69,9 +80,8 @@ function AdminProducts() {
   const approve = useMutation({
     mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => {
       const update = approved
-        ? { approved: true, approved_by: user!.id, approved_at: new Date().toISOString() }
-        : { approved: false, approved_by: null, approved_at: null };
-      
+        ? { status: "approved" as const, approved_by: user!.id, approved_at: new Date().toISOString() }
+        : { status: "rejected" as const, approved_by: null, approved_at: null };
       const { error } = await supabase.from("products").update(update).eq("id", id);
       if (error) throw error;
     },
@@ -177,42 +187,42 @@ function AdminProducts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((p) => (
+                {filtered.map((p) => {
+                  const stock = p.product_variants.reduce((n, v) => n + (v.stock_quantity ?? 0), 0);
+                  const hidden = p.status === "archived";
+                  return (
                   <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
-                      <p className="font-medium">{p.name}</p>
+                      <p className="font-medium">{p.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.category?.name ?? "Uncategorized"}
                       </p>
                     </td>
                     <td className="py-3 text-muted-foreground">
-                      <p className="font-mono text-xs truncate max-w-[120px]">
-                        {p.seller_id.slice(0, 12)}…
+                      <p className="text-xs truncate max-w-[140px]">
+                        {p.seller_stores?.store_name ?? "—"}
                       </p>
                     </td>
-                    <td className="py-3 text-right font-medium">{formatXAF(p.price)}</td>
-                    <td className="py-3 text-right">{p.stock}</td>
+                    <td className="py-3 text-right font-medium">{formatXAF(p.base_price)}</td>
+                    <td className="py-3 text-right">{stock}</td>
                     <td className="py-3">
                       <div className="flex items-center justify-center gap-1.5">
                         <Badge
                           variant="outline"
                           className={`text-xs ${
-                            p.approved
+                            p.status === "approved"
                               ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
-                              : "bg-amber-500/15 text-amber-600 border-amber-500/30"
+                              : p.status === "rejected"
+                                ? "bg-destructive/15 text-destructive border-destructive/30"
+                                : "bg-amber-500/15 text-amber-600 border-amber-500/30"
                           }`}
                         >
-                          {p.approved ? "Approved" : "Pending"}
+                          {p.status === "pending_approval" ? "Pending" : p.status}
                         </Badge>
-                        {!p.active && (
-                          <Badge variant="outline" className="text-xs bg-muted">
-                            Hidden
-                          </Badge>
-                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      {!p.approved ? (
+                      {p.status !== "approved" ? (
                         <Button
                           size="sm"
                           className="rounded-full bg-emerald-500 text-white hover:bg-emerald-600 h-8 text-xs mr-1"
@@ -236,28 +246,29 @@ function AdminProducts() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
-                        onClick={() => toggle.mutate({ id: p.id, active: !p.active })}
-                        title={p.active ? "Hide" : "Show"}
-                        aria-label={`${p.active ? "Hide" : "Show"} ${p.name}`}
-                        disabled={toggle.isPending || del.isPending || approve.isPending}
+                        onClick={() => toggleVisible.mutate({ id: p.id, hide: !hidden })}
+                        title={hidden ? "Show" : "Hide"}
+                        aria-label={`${hidden ? "Show" : "Hide"} ${p.title}`}
+                        disabled={toggleVisible.isPending || del.isPending || approve.isPending}
                       >
-                        {p.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
-                        aria-label={`Delete ${p.name}`}
-                        disabled={toggle.isPending || del.isPending || approve.isPending}
+                        aria-label={`Delete ${p.title}`}
+                        disabled={toggleVisible.isPending || del.isPending || approve.isPending}
                         onClick={() => {
-                          if (confirm(`Delete "${p.name}"? This cannot be undone.`)) del.mutate(p.id);
+                          if (confirm(`Delete "${p.title}"? This cannot be undone.`)) del.mutate(p.id);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

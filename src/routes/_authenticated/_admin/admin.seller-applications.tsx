@@ -88,7 +88,7 @@ function AdminSellerApplications() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Application[];
+      return data as unknown as Application[];
     },
   });
 
@@ -128,7 +128,6 @@ function AdminSellerApplications() {
         user_id: app.user_id,
         title: "Seller application approved 🎉",
         body: `Congratulations! Your store "${app.store_name}" has been approved. You can now list products.`,
-        type: "seller_approved",
       });
     },
     onSuccess: () => {
@@ -159,7 +158,6 @@ function AdminSellerApplications() {
         body: reason.trim()
           ? `Your application for "${app.store_name}" was not approved: ${reason.trim()}`
           : `Your application for "${app.store_name}" was not approved at this time.`,
-        type: "seller_rejected",
       });
     },
     onSuccess: () => {
@@ -186,7 +184,6 @@ function AdminSellerApplications() {
         user_id: app.user_id,
         title: "More info needed for your application",
         body: message.trim() || `We need additional information for your store "${app.store_name}". Please update your application.`,
-        type: "seller_info_requested",
       });
     },
     onSuccess: () => {

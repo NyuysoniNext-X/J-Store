@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Package, ChevronRight, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Package, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json, Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { formatXAF } from "@/lib/mock-data";
@@ -25,38 +27,76 @@ const STATUS_TONE: Record<Tables<"orders">["status"], string> = {
   refunded: "bg-secondary text-foreground",
 };
 
-function formatAddress(address: Json | null): string {
-  if (typeof address === "string") return address.trim() || "Address unavailable";
-  if (!address || typeof address !== "object" || Array.isArray(address)) {
-    return "Address unavailable";
-  }
-  return (
-    [address.address, address.quarter, address.landmark, address.city]
-      .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
-      .join(", ") || "Address unavailable"
-  );
+const AMBER = "bg-amber-500/15 text-amber-600 border border-amber-500/30";
+const GREEN = "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30";
+const RED = "bg-destructive/10 text-destructive border border-destructive/30";
+
+function paymentBadge(status: string): { text: string; tone: string } | null {
+  if (status === "pending") return { text: "Awaiting payment", tone: AMBER };
+  if (status === "failed") return { text: "Payment failed / cancelled", tone: RED };
+  if (status === "refunded") return { text: "Refunded", tone: STATUS_TONE.refunded };
+  return null; // held_in_escrow / released => paid, so the order status says it all
 }
+
+type OrderGroupRow = {
+  id: string;
+  group_number: string;
+  total: number;
+  payment_status: string;
+  payment_method: string;
+  created_at: string;
+  shipping_city: string | null;
+  shipping_quarter: string | null;
+  shipping_landmark: string | null;
+  orders: { id: string; status: Tables<"orders">["status"]; order_items: { quantity: number }[] }[];
+};
 
 function OrdersList() {
   const { user } = useAuth();
+  const [checking, setChecking] = useState<string | null>(null);
   const {
-    data: orders = [],
+    data: groups = [],
     isLoading,
     isError,
     refetch,
   } = useQuery({
     queryKey: ["my-orders", user?.id],
     queryFn: async () => {
+      // One checkout = one order group (one payment) containing one order per seller.
       const { data, error } = await supabase
-        .from("orders")
-        .select("id,order_number,total,status,delivery_address,created_at,order_items(quantity)")
+        .from("order_groups")
+        .select(
+          "id, group_number, total, payment_status, payment_method, created_at, shipping_city, shipping_quarter, shipping_landmark, orders(id, status, order_items(quantity))",
+        )
         .eq("buyer_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as OrderGroupRow[];
     },
     enabled: !!user,
   });
+
+  async function checkPayment(groupId: string) {
+    setChecking(groupId);
+    try {
+      const { data, error } = await supabase.functions.invoke("payments/status", {
+        body: { order_group_id: groupId },
+      });
+      if (error || !data) throw new Error("Could not check right now. Please try again.");
+      if (data.error) throw new Error(data.error);
+      if (data.status === "successful") toast.success("Payment confirmed ✅");
+      else if (data.status === "pending")
+        toast.info("Still waiting for MTN / Orange to confirm. Try again in a minute.");
+      else if (data.status === "none")
+        toast.info("No instant payment was started for this order. If you paid manually, we will verify it soon.");
+      else toast.error(data.reason ?? "The payment was not completed.");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not check the payment.");
+    } finally {
+      setChecking(null);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
@@ -81,7 +121,7 @@ function OrdersList() {
             Try again
           </Button>
         </div>
-      ) : orders.length === 0 ? (
+      ) : groups.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-3xl">
           <Package className="h-12 w-12 text-gold mx-auto mb-3" />
           <p className="font-display text-lg font-semibold">No orders yet</p>
@@ -91,37 +131,92 @@ function OrdersList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {orders.map((o) => {
-            const itemsCount = o.order_items.reduce((s, i) => s + i.quantity, 0);
-            return (
-              <Link
-                key={o.id}
-                to="/orders/track/$id"
-                params={{ id: o.id }}
-                className="group flex items-center gap-4 bg-card border border-border rounded-2xl p-4 md:p-5 hover:border-gold/40 hover:shadow-elegant transition-all"
-              >
+          {groups.map((g) => {
+            const itemsCount = g.orders.reduce(
+              (n, o) => n + o.order_items.reduce((s, i) => s + i.quantity, 0),
+              0,
+            );
+            const pay = paymentBadge(g.payment_status);
+            const statuses = [...new Set(g.orders.map((o) => o.status))];
+            const first = g.orders[0];
+            const address = [g.shipping_landmark, g.shipping_quarter, g.shipping_city]
+              .filter((p): p is string => !!p && p.trim().length > 0)
+              .join(", ");
+            const canCheck =
+              g.payment_status === "pending" &&
+              (g.payment_method === "mtn_momo" || g.payment_method === "orange_money");
+            const body = (
+              <>
                 <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                   <Package className="h-5 w-5 text-gold" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold">#{o.order_number || o.id.slice(0, 8)}</p>
-                    <span
-                      className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${STATUS_TONE[o.status]}`}
-                    >
-                      {o.status.replaceAll("_", " ")}
-                    </span>
+                    <p className="font-semibold">#{g.group_number}</p>
+                    {pay ? (
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${pay.tone}`}
+                      >
+                        {pay.text}
+                      </span>
+                    ) : (
+                      statuses.map((st) => (
+                        <span
+                          key={st}
+                          className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${STATUS_TONE[st]}`}
+                        >
+                          {st.replaceAll("_", " ")}
+                        </span>
+                      ))
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {new Date(o.created_at).toLocaleDateString()} · {itemsCount} item
-                    {itemsCount !== 1 ? "s" : ""} · {formatAddress(o.delivery_address)}
+                    {new Date(g.created_at).toLocaleDateString()} · {itemsCount} item
+                    {itemsCount !== 1 ? "s" : ""} · {address || "Address unavailable"}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-display font-bold">{formatXAF(o.total)}</p>
+                  <p className="font-display font-bold">{formatXAF(g.total)}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
-              </Link>
+              </>
+            );
+            const cardClass =
+              "group flex items-center gap-4 p-4 md:p-5 hover:bg-muted/20 transition-colors";
+            return (
+              <div
+                key={g.id}
+                className="bg-card border border-border rounded-2xl overflow-hidden hover:border-gold/40 transition-all"
+              >
+                {first ? (
+                  <Link to="/orders/track/$id" params={{ id: first.id }} className={cardClass}>
+                    {body}
+                  </Link>
+                ) : (
+                  <div className={cardClass}>{body}</div>
+                )}
+                {canCheck && (
+                  <div className="flex items-center justify-between gap-3 border-t border-border bg-amber-500/5 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">
+                      Paid already? It can take a minute to confirm.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full h-8 text-xs"
+                      disabled={checking === g.id}
+                      onClick={() => checkPayment(g.id)}
+                    >
+                      {checking === g.id ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Check payment status
+                    </Button>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

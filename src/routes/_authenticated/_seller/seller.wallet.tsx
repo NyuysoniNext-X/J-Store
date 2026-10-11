@@ -104,12 +104,12 @@ function SellerWallet() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_items")
-        .select("unit_price, qty, orders(status)")
-        .eq("seller_id", user!.id);
+        // order_items has no seller column: ownership goes order -> store -> owner.
+        .select("line_total, orders!inner(status, seller_stores!inner(owner_id))")
+        .eq("orders.seller_stores.owner_id", user!.id);
       if (error) throw error;
-      return data as Array<{
-        unit_price: number;
-        qty: number;
+      return data as unknown as Array<{
+        line_total: number;
         orders: { status: string } | null;
       }>;
     },
@@ -119,7 +119,7 @@ function SellerWallet() {
   // ── Compute balances ──────────────────────────────────────────────────────
   const totalEarned = orderItems
     .filter((i) => i.orders?.status === "completed" || i.orders?.status === "delivered")
-    .reduce((s, i) => s + i.unit_price * i.qty, 0);
+    .reduce((s, i) => s + i.line_total, 0);
 
   const walletBalance = transactions.reduce((s, t) => s + t.amount, 0);
   const pendingWithdrawals = withdrawals
@@ -148,7 +148,6 @@ function SellerWallet() {
         user_id: user!.id,
         title: "Withdrawal request received",
         body: `Your withdrawal of ${formatXAF(amount)} is being reviewed. We'll process it within 3 hours.`,
-        type: "withdrawal_requested",
       });
     },
     onSuccess: () => {

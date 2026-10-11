@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Heart,
   ShoppingCart,
@@ -46,6 +46,8 @@ export function Navbar() {
   const { user, isAuthenticated, roles, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: categories = [] } = useCategories();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showCategoryBar = pathname.startsWith("/shop");
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
@@ -93,14 +95,6 @@ export function Navbar() {
           <span className="hidden sm:inline text-xs font-semibold uppercase">{lang}</span>
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Theme">
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden sm:inline-flex"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
           </Button>
           <Link to="/wishlist" className="relative p-2 rounded-md hover:bg-muted">
             <Heart className="h-5 w-5" />
@@ -228,24 +222,26 @@ export function Navbar() {
           )}
         </div>
       </div>
-
-      <nav className="hidden md:block border-t border-border">
-        <div className="mx-auto max-w-[1536px] px-6 h-11 flex items-center gap-6 text-sm">
-          <Link to="/shop" className="font-medium hover:text-gold transition-colors">
-            All
-          </Link>
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              to="/shop"
-              search={{ category: c.slug }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {c.name}
+      
+    {showCategoryBar && (
+        <nav className="hidden md:block border-t border-border">
+          <div className="w-full px-6 h-11 flex items-center justify-between gap-4 text-sm overflow-x-auto whitespace-nowrap"> 
+            <Link to="/shop" className="font-medium hover:text-gold transition-colors">
+              All
             </Link>
-          ))}
-        </div>
-      </nav>
+            {categories.map((c) => (
+              <Link
+                key={c.slug}
+                to="/shop"
+                search={{ category: c.slug }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {/* Mobile drawer */}
       {mobileOpen && (

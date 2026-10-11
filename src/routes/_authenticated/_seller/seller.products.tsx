@@ -33,15 +33,17 @@ export const Route = createFileRoute("/_authenticated/_seller/seller/products")(
 
 type ProductRow = {
   id: string;
-  name: string;  // Use 'name' not 'title'
+  title: string;
   slug: string;
   description: string | null;
-  price: number;  // Use 'price' not 'base_price'
+  base_price: number;
   category_id: string | null;
-  image_url: string | null;
   status: string;
-  seller_id: string;  // Add seller_id
-  store_id: string | null;
+  store_id: string;
+  rejection_reason: string | null;
+  // Joined in — images live in product_images, stock in product_variants.
+  product_images: { url: string; position: number }[];
+  product_variants: { id: string; stock_quantity: number }[];
 };
 
 type Category = {
@@ -55,6 +57,16 @@ const EMPTY = {
   description: "",
   base_price: 0,
   category_id: "",
+  stock: 0,
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  pending_approval: "Pending review",
+  approved: "Live",
+  rejected: "Rejected",
+  flagged: "Flagged",
+  archived: "Archived",
 };
 
 // Generate slug from title
@@ -105,17 +117,17 @@ function SellerProducts() {
       
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, product_images ( url, position ), product_variants ( id, stock_quantity )")
         .eq("store_id", store.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as ProductRow[];
+      return data as unknown as ProductRow[];
     },
     enabled: !!user,
   });
 
   // Fetch seller's store
-  const { data: sellerStore, error: storeError } = useQuery({
+  const { data: sellerStore } = useQuery({
     queryKey: ["seller-store", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -125,12 +137,10 @@ function SellerProducts() {
         .single();
       
       if (error) {
-        console.error("Store fetch error:", error);
-        if (error.code === 'PGRST116') return null;
+        if (error.code === "PGRST116") return null;
         throw error;
       }
-      
-      console.log("Seller store found:", data);
+
       return data;
     },
     enabled: !!user,
@@ -191,58 +201,62 @@ function SellerProducts() {
         throw new Error("You must create a store before adding products");
       }
 
-      console.log("User ID:", user?.id);
-      console.log("Store ID:", sellerStore.id);
-      
-      // Debug: Verify store ownership
-      const { data: storeCheck, error: checkError } = await supabase
-        .from("seller_stores")
-        .select("id, owner_id, store_name")
-        .eq("id", sellerStore.id)
-        .single();
-      
-      console.log("Store ownership check:", storeCheck, checkError);
-      
-      if (storeCheck && storeCheck.owner_id !== user?.id) {
-        throw new Error(`Store owner mismatch. Store owner: ${storeCheck.owner_id}, Current user: ${user?.id}`);
+      if (!form.title.trim()) throw new Error("Enter a product title");
+      if (!(form.base_price > 0)) throw new Error("Enter a price greater than 0");
+      if (!Number.isInteger(form.stock) || form.stock < 0) {
+        throw new Error("Stock must be a whole number (0 or more)");
       }
 
       const uploadedUrl = await uploadImage();
-
       const slug = editing?.slug || generateSlug(form.title);
-      
-      const payload = { 
-        name: form.title,  // Use 'name' instead of 'title'
+
+      // NOTE: status and store_id are deliberately NOT sent on update — a DB
+      // trigger blocks sellers from changing them. New products must start as
+      // 'draft'; submit_product_for_review moves them to the admin queue.
+      const fields = {
+        title: form.title.trim(),
         slug,
         description: form.description,
-        price: form.base_price,  // Use 'price' instead of 'base_price'
+        base_price: form.base_price,
         category_id: form.category_id || null,
-        seller_id: user?.id,  // Use 'seller_id' (required)
-        store_id: sellerStore.id,  // Also set store_id for compatibility
-        image_url: uploadedUrl || null,
-        status: "draft" as const,
       };
-      
-      console.log("Insert payload:", payload);
-      
+
+      let productId: string;
+
       if (editing) {
-        const { error } = await supabase
-          .from("products")
-          .update(payload)
-          .eq("id", editing.id);
+        productId = editing.id;
+        const { error } = await supabase.from("products").update(fields).eq("id", editing.id);
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("products")
-          .insert(payload)
-          .select();
-        
-        console.log("Insert result:", data, error);
+          .insert({ ...fields, store_id: sellerStore.id, status: "draft" })
+          .select()
+          .single();
         if (error) throw error;
+        productId = data.id;
+      }
+
+      // Image + stock are saved by one function that checks ownership itself,
+      // so this doesn't depend on table-level policies on product_images /
+      // product_variants (which were rejecting the insert with a 403).
+      const { error: mediaErr } = await supabase.rpc("save_product_media", {
+        p_product_id: productId,
+        p_image_url: uploadedUrl ?? undefined,
+        p_stock: form.stock,
+      });
+      if (mediaErr) throw new Error(`Saved, but image/stock failed: ${mediaErr.message}`);
+
+      // New products go straight into the review queue so they can go live.
+      if (!editing) {
+        const { error: subErr } = await supabase.rpc("submit_product_for_review", {
+          p_product_id: productId,
+        });
+        if (subErr) throw new Error(`Saved as draft, but submit failed: ${subErr.message}`);
       }
     },
     onSuccess: () => {
-      toast.success(editing ? "Product updated" : "Product created");
+      toast.success(editing ? "Product updated" : "Product submitted for review");
       qc.invalidateQueries({ queryKey: ["seller-products", user?.id] });
       setOpen(false);
       setEditing(null);
@@ -254,6 +268,18 @@ function SellerProducts() {
       console.error("Upsert error:", e);
       toast.error(e.message);
     },
+  });
+
+  const submitForReview = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("submit_product_for_review", { p_product_id: id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Submitted for review");
+      qc.invalidateQueries({ queryKey: ["seller-products", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const del = useMutation({
@@ -277,15 +303,17 @@ function SellerProducts() {
   };
   
   const openEdit = (p: ProductRow) => {
+    const currentImage = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position)[0];
     setEditing(p);
     setForm({
       title: p.title,
       description: p.description ?? "",
       base_price: p.base_price,
       category_id: p.category_id ?? "",
+      stock: p.product_variants?.[0]?.stock_quantity ?? 0,
     });
     setImageFile(null);
-    setPreviewUrl(p.image_url);
+    setPreviewUrl(currentImage?.url ?? null);
     setOpen(true);
   };
 
@@ -371,7 +399,19 @@ function SellerProducts() {
                   </Select>
                 </div>
               </div>
-              
+
+              <div>
+                <Label>Stock quantity</Label>
+                <Input
+                  required
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+                />
+              </div>
+
               <div>
                 <Label>Product Image</Label>
                 <Input
@@ -450,9 +490,9 @@ function SellerProducts() {
                       <p className="text-xs text-muted-foreground">{p.slug}</p>
                     </td>
                     <td className="py-3 hidden md:table-cell">
-                      {p.image_url ? (
+                      {p.product_images?.[0]?.url ? (
                         <img
-                          src={p.image_url}
+                          src={p.product_images[0].url}
                           alt={p.title}
                           className="h-12 w-12 rounded-lg object-cover border border-border"
                         />
@@ -464,11 +504,25 @@ function SellerProducts() {
                     </td>
                     <td className="py-3 text-right font-semibold">{formatXAF(p.base_price)}</td>
                     <td className="py-3 text-center">
-                      <span className="text-xs capitalize px-2 py-1 rounded-full bg-secondary">
-                        {p.status}
+                      <span
+                        className="text-xs px-2 py-1 rounded-full bg-secondary"
+                        title={p.rejection_reason ?? undefined}
+                      >
+                        {STATUS_LABEL[p.status] ?? p.status}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {(p.status === "draft" || p.status === "rejected") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full h-8 text-xs mr-1"
+                          disabled={submitForReview.isPending}
+                          onClick={() => submitForReview.mutate(p.id)}
+                        >
+                          Submit for review
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" onClick={() => openEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
