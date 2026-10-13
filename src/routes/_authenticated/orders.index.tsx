@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -20,15 +21,14 @@ const STATUS_TONE: Record<Tables<"orders">["status"], string> = {
   processing: "bg-secondary text-foreground",
   shipped: "bg-gold/15 text-gold border border-gold/30",
   out_for_delivery: "bg-gold/15 text-gold border border-gold/30",
-  delivered: "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30",
-  completed: "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30",
+  delivered: "bg-gold-500/15 text-gold-700 border border-gold-500/30",
+  completed: "bg-gold-500/15 text-gold-700 border border-gold-500/30",
   cancelled: "bg-destructive/10 text-destructive border border-destructive/30",
   disputed: "bg-destructive/10 text-destructive border border-destructive/30",
   refunded: "bg-secondary text-foreground",
 };
 
 const AMBER = "bg-amber-500/15 text-amber-600 border border-amber-500/30";
-const GREEN = "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30";
 const RED = "bg-destructive/10 text-destructive border border-destructive/30";
 
 function paymentBadge(status: string): { text: string; tone: string } | null {
@@ -52,6 +52,7 @@ type OrderGroupRow = {
 };
 
 function OrdersList() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [checking, setChecking] = useState<string | null>(null);
   const {
@@ -82,13 +83,17 @@ function OrdersList() {
       const { data, error } = await supabase.functions.invoke("payments/status", {
         body: { order_group_id: groupId },
       });
-      if (error || !data) throw new Error("Could not check right now. Please try again.");
+      if (error || !data) throw new Error(t("roles.could_not_check_right_now_please_try_again"));
       if (data.error) throw new Error(data.error);
-      if (data.status === "successful") toast.success("Payment confirmed ✅");
+      if (data.status === "successful") toast.success(t("roles.payment_confirmed"));
       else if (data.status === "pending")
-        toast.info("Still waiting for MTN / Orange to confirm. Try again in a minute.");
+        toast.info(t("roles.still_waiting_for_mtn_orange_to_confirm_try_again_in_a_minute"));
       else if (data.status === "none")
-        toast.info("No instant payment was started for this order. If you paid manually, we will verify it soon.");
+        toast.info(
+          t(
+            "roles.no_instant_payment_was_started_for_this_order_if_you_paid_manually_we_will_verify_it_soon",
+          ),
+        );
       else toast.error(data.reason ?? "The payment was not completed.");
       await refetch();
     } catch (e) {
@@ -101,8 +106,10 @@ function OrdersList() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">My orders</p>
-        <h1 className="font-display text-3xl md:text-4xl font-bold">Recent orders</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">
+          {t("roles.my_orders")}
+        </p>
+        <h1 className="font-display text-3xl md:text-4xl font-bold">{t("roles.recent_orders")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Track shipments and reorder favourites.
         </p>
@@ -124,7 +131,7 @@ function OrdersList() {
       ) : groups.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-3xl">
           <Package className="h-12 w-12 text-gold mx-auto mb-3" />
-          <p className="font-display text-lg font-semibold">No orders yet</p>
+          <p className="font-display text-lg font-semibold">{t("roles.no_orders_yet")}</p>
           <p className="text-sm text-muted-foreground mt-1">
             When you place an order, it will show up here.
           </p>

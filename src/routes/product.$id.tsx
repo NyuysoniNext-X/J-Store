@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { StarRating } from "@/components/shop/StarRating";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
@@ -26,17 +27,23 @@ export const Route = createFileRoute("/product/$id")({
       { name: "description", content: loaderData?.description ?? "" },
     ],
   }),
-  notFoundComponent: () => (
-    <div className="mx-auto max-w-md text-center py-20">
-      <h1 className="font-display text-3xl font-bold">Product not found</h1>
-      <Link to="/shop" className="text-gold mt-4 inline-block">
-        Back to shop
-      </Link>
-    </div>
-  ),
+  notFoundComponent: ProductNotFound,
 });
 
+function ProductNotFound() {
+  const { t } = useI18n();
+  return (
+    <div className="mx-auto max-w-md text-center py-20">
+      <h1 className="font-display text-3xl font-bold">{t("product.notFound")}</h1>
+      <Link to="/shop" className="text-gold mt-4 inline-block">
+        {t("product.backToShop")}
+      </Link>
+    </div>
+  );
+}
+
 function ProductPage() {
+  const { lang, t } = useI18n();
   const product = Route.useLoaderData();
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -74,11 +81,11 @@ function ProductPage() {
     <div className="mx-auto max-w-[1536px] px-6 py-8">
       <nav className="text-xs text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground">
-          Home
+          {t("common.home")}
         </Link>{" "}
         /{" "}
         <Link to="/shop" className="hover:text-foreground">
-          Shop
+          {t("nav.shop")}
         </Link>{" "}
         / <span className="text-foreground">{product.name}</span>
       </nav>
@@ -149,7 +156,9 @@ function ProductPage() {
             <div className="flex items-center gap-3 mt-3 text-sm">
               <StarRating value={product.rating} size={16} />
               <span className="font-medium">{product.rating.toFixed(1)}</span>
-              <span className="text-muted-foreground">· {product.reviews} reviews</span>
+              <span className="text-muted-foreground">
+                · {product.reviews} {t("product.reviews")}
+              </span>
             </div>
           </div>
 
@@ -172,6 +181,7 @@ function ProductPage() {
               <button
                 onClick={() => setQty(Math.max(1, qty - 1))}
                 className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-l-full"
+                aria-label={t("product.decreaseQuantity")}
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -179,6 +189,7 @@ function ProductPage() {
               <button
                 onClick={() => setQty(qty + 1)}
                 className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-r-full"
+                aria-label={t("product.increaseQuantity")}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -186,7 +197,7 @@ function ProductPage() {
             <button
               onClick={() => toggleWish(product.id)}
               className="h-11 w-11 rounded-full border border-border flex items-center justify-center hover:border-gold transition-colors"
-              aria-label="Wishlist"
+              aria-label={t("product.wishlist")}
             >
               <Heart className={wished ? "h-5 w-5 fill-destructive text-destructive" : "h-5 w-5"} />
             </button>
@@ -196,31 +207,33 @@ function ProductPage() {
             <Button
               onClick={() => {
                 add(product.id, qty);
-                toast.success("Added to cart", { description: `${qty} × ${product.name}` });
+                toast.success(t("product.addedToCart"), {
+                  description: `${qty} × ${product.name}`,
+                });
               }}
               className="rounded-full h-12 px-7 flex-1 bg-navy text-navy-foreground hover:bg-navy/90"
             >
-              <ShoppingCart className="mr-2 h-4 w-4" /> Add to cart
+              <ShoppingCart className="mr-2 h-4 w-4" /> {t("cart.add")}
             </Button>
             <Button
               asChild
               className="rounded-full h-12 px-7 flex-1 bg-gold text-gold-foreground hover:bg-gold/90"
               onClick={() => add(product.id, qty)}
             >
-              <Link to="/checkout">Buy now</Link>
+              <Link to="/checkout">{t("cart.buy")}</Link>
             </Button>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border">
             {[
-              { icon: Truck, label: "Free delivery", sub: "Orders > 50k" },
-              { icon: ShieldCheck, label: "Buyer protected", sub: "Refund guarantee" },
-              { icon: RotateCcw, label: "7-day returns", sub: "No hassle" },
+              { icon: Truck, key: "product.freeDelivery", sub: "product.ordersOver" },
+              { icon: ShieldCheck, key: "product.buyerProtected", sub: "product.refundGuarantee" },
+              { icon: RotateCcw, key: "product.returns", sub: "product.noHassle" },
             ].map((f, i) => (
               <div key={i} className="text-center">
                 <f.icon className="h-5 w-5 text-gold mx-auto mb-1" />
-                <p className="text-xs font-semibold">{f.label}</p>
-                <p className="text-[11px] text-muted-foreground">{f.sub}</p>
+                <p className="text-xs font-semibold">{t(f.key)}</p>
+                <p className="text-[11px] text-muted-foreground">{t(f.sub)}</p>
               </div>
             ))}
           </div>
@@ -230,7 +243,7 @@ function ProductPage() {
       {reviews.length > 0 && (
         <section className="mt-20">
           <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">
-            Customer reviews ({reviews.length})
+            {t("product.customerReviews")} ({reviews.length})
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             {reviews.map((r) => (
@@ -241,7 +254,7 @@ function ProductPage() {
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{r.comment}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {new Date(r.date).toLocaleDateString("fr-FR", {
+                  {new Date(r.date).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-GB", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -255,7 +268,9 @@ function ProductPage() {
 
       {related.length > 0 && (
         <section className="mt-20">
-          <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">You may also like</h2>
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">
+            {t("product.youMayLike")}
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {related.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />

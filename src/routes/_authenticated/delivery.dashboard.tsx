@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useMutation,
@@ -38,6 +39,7 @@ function formatAddress(parts: Array<string | null | undefined>): string {
 }
 
 function DeliveryDashboard() {
+  const { t } = useI18n();
   const { user, hasAnyRole } = useAuth();
   const qc = useQueryClient();
   const canAccess = hasAnyRole(["delivery", "admin", "super_admin"]);
@@ -100,7 +102,8 @@ function DeliveryDashboard() {
 
   const updateOrder = useMutation({
     mutationFn: async ({ id, status, previousStatus }: DeliveryAction) => {
-      if (!personnel?.is_approved) throw new Error("An approved delivery profile is required.");
+      if (!personnel?.is_approved)
+        throw new Error(t("roles.an_approved_delivery_profile_is_required"));
       const now = new Date().toISOString();
       let query = supabase
         .from("deliveries")
@@ -120,11 +123,12 @@ function DeliveryDashboard() {
           : query.eq("delivery_personnel_id", personnel.id);
       const { data, error } = await query.select("id").maybeSingle();
       if (error) throw error;
-      if (!data) throw new Error("Delivery changed or access was denied. Refresh and try again.");
+      if (!data)
+        throw new Error(t("roles.delivery_changed_or_access_was_denied_refresh_and_try_again"));
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["delivery-orders", user?.id] });
-      toast.success("Delivery updated");
+      toast.success(t("roles.delivery_updated"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -132,10 +136,10 @@ function DeliveryDashboard() {
   const assigned = orders.filter((o) => o.delivery_personnel_id === personnel?.id);
   const available = orders.filter((o) => !o.delivery_personnel_id && o.status === "unassigned");
   const stats = [
-    { label: "Assigned", value: assigned.length, icon: Truck },
-    { label: "Available", value: available.length, icon: PackageCheck },
+    { label: t("roles.assigned"), value: assigned.length, icon: Truck },
+    { label: t("roles.available"), value: available.length, icon: PackageCheck },
     {
-      label: "In transit",
+      label: t("roles.in_transit"),
       value: assigned.filter((o) => ["picked_up", "in_transit"].includes(o.status)).length,
       icon: Clock,
     },
@@ -145,15 +149,15 @@ function DeliveryDashboard() {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <Truck className="mx-auto mb-4 h-12 w-12 text-gold" />
-        <h1 className="font-display text-2xl font-bold">Delivery access required</h1>
+        <h1 className="font-display text-2xl font-bold">{t("roles.delivery_access_required")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Apply and wait for approval before opening the delivery dashboard.
+          {t("roles.apply_and_wait_for_approval_before_opening_the_delivery_dashboard")}
         </p>
         <Button
           asChild
           className="mt-6 rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
         >
-          <Link to="/delivery/apply">Apply for delivery</Link>
+          <Link to="/delivery/apply">{t("roles.apply_for_delivery")}</Link>
         </Button>
       </div>
     );
@@ -167,11 +171,13 @@ function DeliveryDashboard() {
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-            Delivery dashboard
+            {t("roles.delivery_dashboard")}
           </p>
-          <h1 className="font-display text-3xl font-bold md:text-4xl">Delivery workbench</h1>
+          <h1 className="font-display text-3xl font-bold md:text-4xl">
+            {t("roles.delivery_workbench")}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Claim available orders, mark pickups, and confirm drop-off.
+            {t("roles.claim_available_orders_mark_pickups_and_confirm_drop_off")}
           </p>
         </div>
       </div>
@@ -195,27 +201,28 @@ function DeliveryDashboard() {
         </div>
       ) : isError || personnelError ? (
         <p role="alert" className="py-10 text-center text-destructive">
-          Unable to load deliveries. Please refresh and try again.
+          {t("roles.unable_to_load_deliveries_please_refresh_and_try_again")}
         </p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {!personnel?.is_approved && (
             <p className="text-sm text-muted-foreground lg:col-span-2">
-              An approved delivery profile is required to claim or update deliveries. Contact an
-              administrator.
+              {t(
+                "roles.an_approved_delivery_profile_is_required_to_claim_or_update_deliveries_contact_an_administrator",
+              )}
             </p>
           )}
           <OrderColumn
-            title="My deliveries"
+            title={t("roles.my_deliveries")}
             orders={assigned}
-            empty="No deliveries assigned yet."
+            empty={t("roles.no_deliveries_assigned_yet")}
             canUpdate={!!personnel?.is_approved}
             updateOrder={updateOrder}
           />
           <OrderColumn
-            title="Available pickups"
+            title={t("roles.available_pickups")}
             orders={available}
-            empty="No available pickups right now."
+            empty={t("roles.no_available_pickups_right_now")}
             canUpdate={!!personnel?.is_approved}
             updateOrder={updateOrder}
           />
@@ -240,6 +247,7 @@ function OrderColumn({
   canUpdate: boolean;
   updateOrder: DeliveryUpdateMutation;
 }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl border border-border bg-card p-5">
       <h2 className="mb-4 font-display text-xl font-semibold">{title}</h2>
@@ -254,7 +262,7 @@ function OrderColumn({
                   <p className="font-semibold">#{order.order_id.slice(0, 8)}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" />{" "}
-                    {order.order?.address ?? "Address unavailable"}
+                    {order.order?.address ?? t("roles.address_unavailable")}
                   </p>
                 </div>
                 <Badge variant="outline" className="capitalize">
@@ -262,7 +270,7 @@ function OrderColumn({
                 </Badge>
               </div>
               <div className="mb-4 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Order total</span>
+                <span className="text-muted-foreground">{t("roles.order_total")}</span>
                 <span className="font-semibold">
                   {order.order ? formatXAF(order.order.total) : "Unavailable"}
                 </span>
@@ -280,7 +288,7 @@ function OrderColumn({
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                 >
-                  Claim delivery
+                  {t("roles.claim_delivery")}
                 </Button>
               ) : order.status === "assigned" ? (
                 <Button
@@ -295,7 +303,7 @@ function OrderColumn({
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                 >
-                  Mark picked up
+                  {t("roles.mark_picked_up")}
                 </Button>
               ) : (
                 <Button
@@ -310,7 +318,7 @@ function OrderColumn({
                   }
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                 >
-                  <CheckCircle2 className="mr-1.5 h-4 w-4" /> Mark delivered
+                  <CheckCircle2 className="mr-1.5 h-4 w-4" /> {t("roles.mark_delivered")}
                 </Button>
               )}
             </div>

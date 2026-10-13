@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import useCartDetailed, { useCart, useCartSubtotal } from "@/lib/store";
 import { formatXAF } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
   component: CartPage,
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
+  const { t } = useI18n();
   const items = useCartDetailed();
   const subtotal = useCartSubtotal();
   const setQty = useCart((s) => s.setQty);
@@ -21,15 +23,15 @@ function CartPage() {
     return (
       <div className="mx-auto max-w-md text-center py-24 px-6">
         <ShoppingBag className="h-16 w-16 text-gold mx-auto mb-4" />
-        <h1 className="font-display text-3xl font-bold">Your cart is empty</h1>
+        <h1 className="font-display text-3xl font-bold">{t("cart.empty")}</h1>
         <p className="text-muted-foreground mt-2">
-          Discover premium products from our verified sellers.
+          {t("cart.discover")}
         </p>
         <Button
           asChild
           className="mt-6 rounded-full h-12 px-7 bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
         >
-          <Link to="/shop">Start shopping</Link>
+          <Link to="/shop">{t("cart.startShopping")}</Link>
         </Button>
       </div>
     );
@@ -38,7 +40,7 @@ function CartPage() {
   return (
     <div className="mx-auto max-w-[1536px] px-6 py-10">
       <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">
-        Your cart ({items.length})
+        {t("cart.title")} ({items.length})
       </h1>
       <div className="grid lg:grid-cols-[1fr_400px] gap-10">
         <div className="space-y-4">
@@ -82,7 +84,7 @@ function CartPage() {
                 <button
                   onClick={() => remove(product.id)}
                   className="text-muted-foreground hover:text-destructive"
-                  aria-label="Remove"
+                  aria-label={t("cart.remove")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -107,17 +109,17 @@ function CartPage() {
         </div>
 
         <aside className="bg-card border border-border rounded-2xl p-6 h-fit lg:sticky lg:top-32 space-y-4">
-          <h3 className="font-display text-xl font-semibold">Order summary</h3>
+          <h3 className="font-display text-xl font-semibold">{t("cart.orderSummary")}</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("cart.subtotal")}</span>
               <span>{formatXAF(subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
+              <span className="text-muted-foreground">{t("cart.shipping")}</span>
               <span>
                 {shipping === 0 ? (
-                  <span className="text-gold font-medium">Free</span>
+                  <span className="text-gold font-medium">{t("cart.free")}</span>
                 ) : (
                   formatXAF(shipping)
                 )}
@@ -125,28 +127,28 @@ function CartPage() {
             </div>
           </div>
           <div className="pt-4 border-t border-border flex justify-between font-display text-lg font-bold">
-            <span>Total</span>
+            <span>{t("cart.total")}</span>
             <span>{formatXAF(total)}</span>
           </div>
           <div className="pt-2">
             <div className="flex gap-2">
               <input
-                placeholder="Coupon code"
+                placeholder={t("cart.couponCode")}
                 className="flex-1 h-10 rounded-full px-4 bg-secondary border border-transparent focus:outline-none focus:border-gold text-sm"
               />
               <Button variant="outline" className="rounded-full">
-                Apply
+                {t("common.apply")}
               </Button>
             </div>
           </div>
           <Button
             asChild
-            className="w-full rounded-full h-12 bg-emerald text-emerald-foreground hover:bg-emerald/90"
+            className="w-full rounded-full h-12 bg-gold text-gold-foreground hover:bg-gold/90"
           >
-            <Link to="/checkout">Proceed to checkout</Link>
+            <Link to="/checkout">{t("cart.proceed")}</Link>
           </Button>
           <p className="text-[11px] text-center text-muted-foreground">
-            Secure payment · MoMo · Orange · Visa · Mastercard
+            {t("cart.securePayment")}
           </p>
         </aside>
       </div>

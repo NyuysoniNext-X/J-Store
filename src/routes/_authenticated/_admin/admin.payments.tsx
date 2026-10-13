@@ -1,15 +1,8 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  Wallet,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Phone,
-  RefreshCw,
-} from "lucide-react";
+import { Wallet, Loader2, CheckCircle2, XCircle, Clock, Phone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -42,7 +35,7 @@ type Verification = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-  confirmed: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  confirmed: "bg-gold-500/15 text-gold-700 border-gold-500/30",
   rejected: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
@@ -52,12 +45,17 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 function AdminPayments() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"pending" | "confirmed" | "rejected" | "all">("pending");
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
 
-  const { data: verifications = [], isLoading, refetch } = useQuery({
+  const {
+    data: verifications = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-payment-verifications"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -114,12 +112,12 @@ function AdminPayments() {
       // Notify buyer
       await supabase.from("notifications").insert({
         user_id: v.buyer_id,
-        title: "Payment confirmed ✅",
+        title: "Payment confirmed",
         body: `Your payment of ${formatXAF(v.amount)} has been verified. Your order is now being processed.`,
       });
     },
     onSuccess: () => {
-      toast.success("Payment confirmed — order moved to confirmed");
+      toast.success(t("roles.payment_confirmed_order_moved"));
       qc.invalidateQueries({ queryKey: ["admin-payment-verifications"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -127,6 +125,15 @@ function AdminPayments() {
 
   const rejectPayment = useMutation({
     mutationFn: async ({ v, reason }: { v: Verification; reason: string }) => {
+      if (v.order_group_id) {
+        const { error } = await supabase.rpc("reject_manual_payment", {
+          p_verification: v.id,
+          p_reason: reason.trim() || null,
+        });
+        if (error) throw error;
+        return { stockReleased: true };
+      }
+
       const { error: vErr } = await supabase
         .from("payment_verifications")
         .update({
@@ -145,9 +152,14 @@ function AdminPayments() {
           ? `We could not verify your transaction: ${reason}. Please contact support or resubmit.`
           : "We could not verify your payment reference. Please contact support.",
       });
+      return { stockReleased: false };
     },
-    onSuccess: () => {
-      toast.success("Payment rejected — buyer notified");
+    onSuccess: ({ stockReleased }) => {
+      toast.success(
+        stockReleased
+          ? t("roles.payment_rejected_buyer_notified_and_stock_released")
+          : t("roles.payment_rejected_buyer_notified"),
+      );
       qc.invalidateQueries({ queryKey: ["admin-payment-verifications"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -157,7 +169,7 @@ function AdminPayments() {
   const pendingCount = verifications.filter((v) => v.status === "pending").length;
 
   return (
-    <div className="mx-auto max-w-[1536px] px-6 py-10">
+    <div className="mx-auto max-w-384 px-6 py-10">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
         <div className="flex items-center gap-3">
@@ -165,21 +177,25 @@ function AdminPayments() {
             <Wallet className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">Admin</p>
-            <h1 className="font-display text-3xl md:text-4xl font-bold">Payment verifications</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">
+              {t("roles.admin")}
+            </p>
+            <h1 className="font-display text-3xl md:text-4xl font-bold">
+              {t("roles.payment_verifications")}
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Verify buyer MoMo transaction references before confirming orders.
+              {t("roles.verify_buyer_momo_transaction_references")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {pendingCount > 0 && (
             <Badge className="bg-amber-500 text-white text-sm px-3 py-1">
-              {pendingCount} pending
+              {t("roles.pending_count", { count: pendingCount })}
             </Badge>
           )}
           <Button variant="outline" size="sm" className="rounded-full" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-1.5" /> Refresh
+            <RefreshCw className="h-4 w-4 mr-1.5" /> {t("roles.refresh")}
           </Button>
         </div>
       </div>
@@ -190,7 +206,9 @@ function AdminPayments() {
       <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-4 flex items-start gap-3 text-sm">
         <Clock className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
         <p className="text-amber-700 dark:text-amber-400">
-          Check your MTN MoMo / Orange Money app to verify each transaction reference before confirming. Buyers were told to expect a response within 3 hours.
+          {t(
+            "roles.check_your_mtn_momo_orange_money_app_to_verify_each_transaction_reference_before_confirming_buyers_were_told_to_expect_a_response_within_3_hours",
+          )}
         </p>
       </div>
 
@@ -206,7 +224,7 @@ function AdminPayments() {
                 : "border-border hover:border-gold/40"
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === "all" ? t("roles.all") : f.charAt(0).toUpperCase() + f.slice(1)}
             {f === "pending" && pendingCount > 0 && (
               <span className="ml-1.5 bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">
                 {pendingCount}
@@ -223,23 +241,17 @@ function AdminPayments() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <p className="text-muted-foreground">No verifications in this category.</p>
+          <p className="text-muted-foreground">{t("roles.no_verifications_in_this_category")}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((v) => (
-            <div
-              key={v.id}
-              className="bg-card border border-border rounded-2xl p-5"
-            >
+            <div key={v.id} className="bg-card border border-border rounded-2xl p-5">
               <div className="flex flex-col md:flex-row md:items-start gap-4">
                 {/* Info */}
                 <div className="flex-1 space-y-1.5 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${STATUS_COLORS[v.status] ?? ""}`}
-                    >
+                    <Badge variant="outline" className={`text-xs ${STATUS_COLORS[v.status] ?? ""}`}>
                       {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
                     </Badge>
                     <span className="text-xs font-mono text-muted-foreground">
@@ -252,28 +264,42 @@ function AdminPayments() {
 
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Amount</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("roles.amount")}
+                      </p>
                       <p className="font-display font-semibold text-lg">{formatXAF(v.amount)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Method</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("roles.method")}
+                      </p>
                       <p className="text-sm font-medium flex items-center gap-1">
                         <Phone className="h-3.5 w-3.5 text-gold" />
                         {METHOD_LABELS[v.payment_method] ?? v.payment_method}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Transaction ref</p>
-                      <p className="text-sm font-mono font-semibold text-gold">{v.transaction_ref}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("roles.transaction_ref")}
+                      </p>
+                      <p className="text-sm font-mono font-semibold text-gold">
+                        {v.transaction_ref}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Buyer</p>
-                      <p className="text-sm truncate">{v.buyer_email ?? v.buyer_id.slice(0, 12) + "…"}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("roles.buyer")}
+                      </p>
+                      <p className="text-sm truncate">
+                        {v.buyer_email ?? v.buyer_id.slice(0, 12) + "…"}
+                      </p>
                     </div>
                   </div>
 
                   {v.reject_reason && (
-                    <p className="text-xs text-destructive mt-1">Reason: {v.reject_reason}</p>
+                    <p className="text-xs text-destructive mt-1">
+                      {t("roles.reason_value", { reason: v.reject_reason })}
+                    </p>
                   )}
                 </div>
 
@@ -290,24 +316,22 @@ function AdminPayments() {
                           rejectPayment.mutate({ v, reason: rejectReasons[v.id] ?? "" })
                         }
                       >
-                        <XCircle className="h-4 w-4 mr-1" /> Reject
+                        <XCircle className="h-4 w-4 mr-1" /> {t("roles.reject")}
                       </Button>
                       <Button
                         size="sm"
-                        className="rounded-full bg-emerald text-emerald-foreground hover:bg-emerald/90"
+                        className="rounded-full bg-gold text-gold-foreground hover:bg-gold/90"
                         disabled={confirm.isPending || rejectPayment.isPending}
                         onClick={() => confirm.mutate(v)}
                       >
-                        <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
+                        <CheckCircle2 className="h-4 w-4 mr-1" /> {t("roles.confirm")}
                       </Button>
                     </div>
                     <input
                       className="h-8 rounded-lg px-3 bg-secondary border border-transparent focus:outline-none focus:border-destructive text-xs w-full md:w-56"
-                      placeholder="Rejection reason (optional)"
+                      placeholder={t("roles.rejection_reason_optional")}
                       value={rejectReasons[v.id] ?? ""}
-                      onChange={(e) =>
-                        setRejectReasons((p) => ({ ...p, [v.id]: e.target.value }))
-                      }
+                      onChange={(e) => setRejectReasons((p) => ({ ...p, [v.id]: e.target.value }))}
                     />
                   </div>
                 )}
@@ -335,8 +359,13 @@ type AttentionRow = {
 
 // Instant (MTN/Orange API) payments that are stuck or need a human decision.
 function AttentionPanel() {
+  const { t } = useI18n();
   const qc = useQueryClient();
-  const { data: rows = [], isFetching, refetch } = useQuery({
+  const {
+    data: rows = [],
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["payment-attention"],
     queryFn: async () => {
       const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
@@ -359,13 +388,15 @@ function AttentionPanel() {
       const { data, error } = await supabase.functions.invoke(`payments/${action}`, {
         body: { attempt_id: id },
       });
-      if (error || !data) throw new Error("Request failed. Please try again.");
+      if (error || !data) throw new Error(t("roles.request_failed_please_try_again"));
       if (data.error) throw new Error(data.error);
       return { action, data };
     },
     onSuccess: ({ action, data }) => {
       toast.success(
-        action === "resolve" ? "Marked as resolved" : `Re-checked — payment is now: ${data.status}`,
+        action === "resolve"
+          ? t("roles.marked_resolved")
+          : t("roles.rechecked_payment_status", { status: data.status }),
       );
       qc.invalidateQueries({ queryKey: ["payment-attention"] });
       qc.invalidateQueries({ queryKey: ["admin-payment-verifications"] });
@@ -373,7 +404,8 @@ function AttentionPanel() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const label = (p: string) => (p === "mtn" ? "MTN MoMo" : p === "orange" ? "Orange Money" : "Test");
+  const label = (p: string) =>
+    p === "mtn" ? "MTN MoMo" : p === "orange" ? "Orange Money" : "Test";
 
   return (
     <div
@@ -383,16 +415,21 @@ function AttentionPanel() {
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">
-          Instant payments needing attention{rows.length > 0 ? ` (${rows.length})` : ""}
+          {t("roles.instant_payments_needing_attention")}
+          {rows.length > 0 ? ` (${rows.length})` : ""}
         </p>
-        <Button variant="ghost" size="sm" className="h-8" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> {t("roles.refresh")}
         </Button>
       </div>
       {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground mt-1">
-          Nothing stuck — all instant payments are confirmed or still within the normal waiting time.
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">{t("roles.nothing_stuck")}</p>
       ) : (
         <div className="mt-3 space-y-2">
           {rows.map((r) => {
@@ -408,7 +445,8 @@ function AttentionPanel() {
                     {formatXAF(r.amount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {r.status} · started {mins} min ago{r.payer_phone ? ` · ${r.payer_phone}` : ""}
+                    {t("roles.payment_started_ago", { status: r.status, minutes: mins })}
+                    {r.payer_phone ? ` · ${r.payer_phone}` : ""}
                   </p>
                   {r.review_note && (
                     <p className="text-xs text-destructive mt-1">{r.review_note}</p>
@@ -423,7 +461,7 @@ function AttentionPanel() {
                       disabled={act.isPending}
                       onClick={() => act.mutate({ id: r.id, action: "recheck" })}
                     >
-                      Re-check now
+                      {t("roles.recheck_now")}
                     </Button>
                   )}
                   {r.needs_review && (
@@ -433,7 +471,7 @@ function AttentionPanel() {
                       disabled={act.isPending}
                       onClick={() => act.mutate({ id: r.id, action: "resolve" })}
                     >
-                      Mark resolved
+                      {t("roles.mark_resolved")}
                     </Button>
                   )}
                 </div>

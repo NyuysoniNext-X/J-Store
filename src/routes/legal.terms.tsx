@@ -2,8 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import ReactMarkdown from "react-markdown";
-import { cleanPolicyContent } from "@/lib/policyUtils";
+import { PolicyContent } from "@/components/legal/PolicyContent";
 
 export const Route = createFileRoute("/legal/terms")({
   component: TermsPage,
@@ -41,49 +40,17 @@ function TermsPage() {
           <FileText className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">{policy?.title}</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+            {policy?.title}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Version {policy?.version} • Effective {new Date(policy?.effective_date || "").toLocaleDateString()}
+            Version {policy?.version} • Effective{" "}
+            {new Date(policy?.effective_date || "").toLocaleDateString()}
           </p>
         </div>
       </div>
 
-      <div className="policy-content space-y-6 text-foreground/90 leading-relaxed whitespace-pre-wrap">
-        <ReactMarkdown
-          components={{
-            h1: ({ children }) => (
-              <h1 className="text-2xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-xl font-semibold mt-6 mb-3 text-foreground">{children}</h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground">{children}</h3>
-            ),
-            p: ({ children }) => <p className="mb-4 text-base leading-7">{children}</p>,
-            ul: ({ children }) => <ul className="list-disc list-inside space-y-2 mb-4 ml-4">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal list-inside space-y-2 mb-4 ml-4">{children}</ol>,
-            li: ({ children }) => <li className="text-base leading-7 ml-2">{children}</li>,
-            strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-            em: ({ children }) => <em className="italic text-foreground/80">{children}</em>,
-            a: ({ href, children }) => (
-              <a href={href} className="text-gold hover:underline font-medium" target="_blank" rel="noopener noreferrer">
-                {children}
-              </a>
-            ),
-            blockquote: ({ children }) => (
-              <blockquote className="border-l-4 border-gold pl-4 italic text-muted-foreground my-4">
-                {children}
-              </blockquote>
-            ),
-            code: ({ children }) => (
-              <code className="bg-secondary px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
-            ),
-          }}
-        >
-          {cleanPolicyContent(policy?.content || "")}
-        </ReactMarkdown>
-      </div>
+      <PolicyContent content={policy?.content || ""} />
 
       <div className="mt-12 p-6 bg-gradient-to-br from-secondary to-secondary/50 rounded-2xl border border-border/50">
         <div className="flex items-start gap-3">

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -27,60 +28,60 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 // ── Role-specific content maps ────────────────────────────────────────────────
 
-function greeting(role?: AppRole | string): string {
+function greeting(role: AppRole | string | undefined, t: (key: string) => string): string {
   switch (role) {
     case "seller":
-      return "Seller Dashboard";
+      return t("roles.seller_dashboard");
     case "admin":
-      return "Admin Console";
+      return t("roles.admin_console");
     case "super_admin":
-      return "Super Admin Control";
+      return t("roles.super_admin_control");
     case "delivery":
-      return "Delivery Hub";
+      return t("roles.delivery_hub");
     default:
-      return "My Account";
+      return t("roles.my_account");
   }
 }
 
-function navItems(role?: AppRole | string) {
-  const common = { icon: LayoutDashboard, label: "Overview" };
+function navItems(role: AppRole | string | undefined, t: (key: string) => string) {
+  const common = { icon: LayoutDashboard, label: t("roles.overview") };
   const map: Record<string, { icon: typeof LayoutDashboard; label: string; to: string }[]> = {
     customer: [
       { ...common, to: "/dashboard" },
-      { icon: ShoppingBag, label: "My Orders", to: "/orders" },
-      { icon: Package, label: "Wishlist", to: "/wishlist" },
-      { icon: Wallet, label: "Profile", to: "/profile" },
+      { icon: ShoppingBag, label: t("roles.my_orders"), to: "/orders" },
+      { icon: Package, label: t("roles.wishlist"), to: "/wishlist" },
+      { icon: Wallet, label: t("roles.profile"), to: "/profile" },
     ],
     seller: [
       { ...common, to: "/dashboard" },
-      { icon: Package, label: "Products", to: "/seller/products" },
-      { icon: ShoppingBag, label: "Orders", to: "/orders" },
-      { icon: Sparkles, label: "Analytics", to: "/seller/dashboard" },
-      { icon: Wallet, label: "Earnings", to: "/seller/dashboard" },
+      { icon: Package, label: t("roles.products"), to: "/seller/products" },
+      { icon: ShoppingBag, label: t("roles.orders"), to: "/orders" },
+      { icon: Sparkles, label: t("roles.analytics"), to: "/seller/dashboard" },
+      { icon: Wallet, label: t("roles.earnings"), to: "/seller/dashboard" },
     ],
     admin: [
       { ...common, to: "/dashboard" },
-      { icon: Store, label: "Sellers", to: "/admin/dashboard" },
-      { icon: Package, label: "Products", to: "/admin/products" },
-      { icon: Users, label: "Users", to: "/admin/dashboard" },
+      { icon: Store, label: t("roles.sellers"), to: "/admin/dashboard" },
+      { icon: Package, label: t("roles.products"), to: "/admin/products" },
+      { icon: Users, label: t("roles.users"), to: "/admin/dashboard" },
     ],
     super_admin: [
       { ...common, to: "/dashboard" },
-      { icon: Users, label: "Admins", to: "/super-admin/dashboard" },
-      { icon: Wallet, label: "Finance", to: "/super-admin/dashboard" },
-      { icon: Settings, label: "Settings", to: "/super-admin/dashboard" },
-      { icon: ShieldCheck, label: "Audit", to: "/super-admin/dashboard" },
+      { icon: Users, label: t("roles.admins"), to: "/super-admin/dashboard" },
+      { icon: Wallet, label: t("roles.finance"), to: "/super-admin/dashboard" },
+      { icon: Settings, label: t("roles.settings"), to: "/super-admin/dashboard" },
+      { icon: ShieldCheck, label: t("roles.audit"), to: "/super-admin/dashboard" },
     ],
     delivery: [
       { ...common, to: "/dashboard" },
-      { icon: Truck, label: "Deliveries", to: "/delivery/dashboard" },
-      { icon: Wallet, label: "Earnings", to: "/delivery/dashboard" },
+      { icon: Truck, label: t("roles.deliveries"), to: "/delivery/dashboard" },
+      { icon: Wallet, label: t("roles.earnings"), to: "/delivery/dashboard" },
     ],
   };
   return map[role ?? "customer"] ?? map.customer;
 }
 
-function stats(role?: AppRole | string) {
+function stats(role: AppRole | string | undefined, t: (key: string) => string) {
   const s = (label: string, value: string, delta: string, icon: typeof Wallet) => ({
     label,
     value,
@@ -90,86 +91,91 @@ function stats(role?: AppRole | string) {
   switch (role) {
     case "seller":
       return [
-        s("Revenue (30d)", formatFCFA(845_000), "↑ 12% vs last month", Wallet),
-        s("Orders", "38", "↑ 5 this week", ShoppingBag),
-        s("Active products", "24", "2 low stock", Package),
+        s(
+          t("roles.revenue_30d"),
+          formatFCFA(845_000),
+          t("roles.up_12_percent_vs_last_month"),
+          Wallet,
+        ),
+        s(t("roles.orders"), "38", t("roles.up_5_this_week"), ShoppingBag),
+        s(t("roles.active_products"), "24", t("roles.2_low_stock"), Package),
       ];
     case "admin":
       return [
-        s("Platform GMV", formatFCFA(12_400_000), "↑ 8%", Wallet),
-        s("Pending approvals", "6", "KYC queue", Store),
-        s("New users (7d)", "142", "↑ 23%", Users),
+        s(t("roles.platform_gmv"), formatFCFA(12_400_000), t("roles.up_8_percent"), Wallet),
+        s(t("roles.pending_approvals"), "6", t("roles.kyc_queue"), Store),
+        s(t("roles.new_users_7d"), "142", t("roles.up_23_percent"), Users),
       ];
     case "super_admin":
       return [
-        s("Escrow balance", formatFCFA(3_120_000), "Held funds", Wallet),
-        s("Commission (30d)", formatFCFA(620_000), "5% of GMV", ShieldCheck),
-        s("Active sellers", "184", "↑ 9", Store),
+        s(t("roles.escrow_balance"), formatFCFA(3_120_000), t("roles.held_funds"), Wallet),
+        s(t("roles.commission_30d"), formatFCFA(620_000), t("roles.5_percent_of_gmv"), ShieldCheck),
+        s(t("roles.active_sellers"), "184", t("roles.up_9"), Store),
       ];
     case "delivery":
       return [
-        s("Deliveries today", "7", "3 in transit", Truck),
-        s("Earnings (week)", formatFCFA(18_500), "↑ 2 vs last wk", Wallet),
-        s("Avg rating", "4.8", "32 ratings", Sparkles),
+        s(t("roles.deliveries_today"), "7", t("roles.3_in_transit"), Truck),
+        s(t("roles.earnings_week"), formatFCFA(18_500), t("roles.up_2_vs_last_week"), Wallet),
+        s(t("roles.avg_rating"), "4.8", t("roles.32_ratings"), Sparkles),
       ];
     default:
       return [
-        s("Total orders", "5", "1 in transit", ShoppingBag),
-        s("Wishlist items", "12", "On sale now", Package),
-        s("Loyalty points", "320", "Spend to level up", Sparkles),
+        s(t("roles.total_orders"), "5", t("roles.1_in_transit"), ShoppingBag),
+        s(t("roles.wishlist_items"), "12", t("roles.on_sale_now"), Package),
+        s(t("roles.loyalty_points"), "320", t("roles.spend_to_level_up"), Sparkles),
       ];
   }
 }
 
-function panelTitle(role?: AppRole | string) {
-  if (role === "seller") return "Your seller toolkit";
-  if (role === "admin") return "Platform moderation";
-  if (role === "super_admin") return "Platform controls";
-  if (role === "delivery") return "Your delivery tools";
-  return "Quick actions";
+function panelTitle(role: AppRole | string | undefined, t: (key: string) => string) {
+  if (role === "seller") return t("roles.your_seller_toolkit");
+  if (role === "admin") return t("roles.platform_moderation");
+  if (role === "super_admin") return t("roles.platform_controls");
+  if (role === "delivery") return t("roles.your_delivery_tools");
+  return t("roles.quick_actions");
 }
 
-function features(role?: AppRole | string): string[] {
+function features(role: AppRole | string | undefined, t: (key: string) => string): string[] {
   const map: Record<string, string[]> = {
     customer: [
-      "Order tracking",
-      "Order history",
-      "Wishlist",
-      "Reviews & ratings",
-      "Saved addresses",
-      "Notifications",
+      t("roles.order_tracking"),
+      t("roles.order_history"),
+      t("roles.wishlist"),
+      t("roles.reviews_ratings"),
+      t("roles.saved_addresses"),
+      t("roles.notifications"),
     ],
     seller: [
-      "Add / edit products",
-      "Bulk CSV upload",
-      "Order fulfilment",
-      "Wallet & payouts",
-      "Sales analytics",
-      "Dispute responses",
+      t("roles.add_edit_products"),
+      t("roles.bulk_csv_upload"),
+      t("roles.order_fulfilment"),
+      t("roles.wallet_payouts"),
+      t("roles.sales_analytics"),
+      t("roles.dispute_responses"),
     ],
     admin: [
-      "Seller KYC approval",
-      "Product moderation",
-      "Bulk moderation",
-      "User management",
-      "Dispute resolution",
-      "Coupon system",
+      t("roles.seller_kyc_approval"),
+      t("roles.product_moderation"),
+      t("roles.bulk_moderation"),
+      t("roles.user_management"),
+      t("roles.dispute_resolution"),
+      t("roles.coupon_system"),
     ],
     super_admin: [
-      "Admin management",
-      "Financial audit",
-      "User activity logs",
-      "Commission control",
-      "Seller suspensions",
-      "Platform settings",
+      t("roles.admin_management"),
+      t("roles.financial_audit"),
+      t("roles.user_activity_logs"),
+      t("roles.commission_control"),
+      t("roles.seller_suspensions"),
+      t("roles.platform_settings"),
     ],
     delivery: [
-      "Assigned deliveries",
-      "Status updates",
-      "Proof of delivery",
-      "Earnings tracker",
-      "Availability toggle",
-      "Route optimisation",
+      t("roles.assigned_deliveries"),
+      t("roles.status_updates"),
+      t("roles.proof_of_delivery"),
+      t("roles.earnings_tracker"),
+      t("roles.availability_toggle"),
+      t("roles.route_optimisation"),
     ],
   };
   return map[role ?? "customer"] ?? map.customer;
@@ -186,6 +192,7 @@ function roleBadgeClass(role?: AppRole | string): string {
 // ── Dashboard component ───────────────────────────────────────────────────────
 
 function DashboardPage() {
+  const { t } = useI18n();
   const { user, roles, signOut } = useAuth();
 
   // Determine the "primary" role for content selection — super_admin > admin > seller > delivery > customer
@@ -199,8 +206,8 @@ function DashboardPage() {
           ? "delivery"
           : "customer";
 
-  const nav = navItems(primaryRole);
-  const statList = stats(primaryRole);
+  const nav = navItems(primaryRole, t);
+  const statList = stats(primaryRole, t);
 
   return (
     <div className="mx-auto max-w-[1536px] px-4 sm:px-6 py-8">
@@ -212,7 +219,7 @@ function DashboardPage() {
           </div>
           <div className="mb-4 rounded-xl bg-secondary/60 p-3">
             <p className="text-sm font-semibold truncate">
-              {user?.user_metadata?.display_name ?? user?.email?.split("@")[0] ?? "User"}
+              {user?.user_metadata?.display_name ?? user?.email?.split("@")[0] ?? t("roles.user")}
             </p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
             <div className="flex flex-wrap gap-1 mt-2">
@@ -245,7 +252,7 @@ function DashboardPage() {
               onClick={() => void signOut()}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
             >
-              <LogOut className="h-4 w-4" /> Sign out
+              <LogOut className="h-4 w-4" /> {t("roles.sign_out")}
             </button>
           </div>
         </aside>
@@ -253,9 +260,15 @@ function DashboardPage() {
         {/* ── Main content ── */}
         <div>
           <div className="mb-6">
-            <h1 className="font-display text-2xl md:text-3xl font-bold">{greeting(primaryRole)}</h1>
+            <h1 className="font-display text-2xl md:text-3xl font-bold">
+              {greeting(primaryRole, t)}
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Welcome back. This is your {primaryRole.replace("_", " ")} portal.
+              {t("roles.welcome_back_role_portal", {
+                role: t(
+                  primaryRole === "super_admin" ? "roles.super_admin" : `roles.${primaryRole}`,
+                ),
+              })}
             </p>
           </div>
 
@@ -271,7 +284,7 @@ function DashboardPage() {
                   <s.icon className="h-4 w-4 text-gold" />
                 </div>
                 <p className="font-display text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-emerald-600 mt-1">{s.delta}</p>
+                <p className="text-xs text-gold-700 mt-1">{s.delta}</p>
               </div>
             ))}
           </div>
@@ -280,10 +293,10 @@ function DashboardPage() {
           <div className="bg-card border border-border rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-gold" />
-              <h2 className="font-display text-lg font-bold">{panelTitle(primaryRole)}</h2>
+              <h2 className="font-display text-lg font-bold">{panelTitle(primaryRole, t)}</h2>
             </div>
             <ul className="grid gap-2 sm:grid-cols-2">
-              {features(primaryRole).map((f) => (
+              {features(primaryRole, t).map((f) => (
                 <li
                   key={f}
                   className="flex items-center gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-sm"
@@ -302,14 +315,14 @@ function DashboardPage() {
                 <QuickLink
                   to="/seller/dashboard"
                   icon={Store}
-                  title="Seller dashboard"
-                  desc="Products, orders & earnings"
+                  title={t("roles.seller_dashboard")}
+                  desc={t("roles.products_orders_earnings")}
                 />
                 <QuickLink
                   to="/seller/products"
                   icon={Package}
-                  title="My products"
-                  desc="Add, edit or retire listings"
+                  title={t("roles.my_products")}
+                  desc={t("roles.add_edit_or_retire_listings")}
                 />
               </>
             )}
@@ -318,21 +331,21 @@ function DashboardPage() {
                 <QuickLink
                   to="/admin/dashboard"
                   icon={Shield}
-                  title="Admin dashboard"
-                  desc="Users, roles & moderation"
+                  title={t("roles.admin_dashboard")}
+                  desc={t("roles.users_roles_moderation")}
                 />
                 <QuickLink
                   to="/admin/products"
                   icon={Package}
-                  title="Product moderation"
-                  desc="Hide or remove listings"
+                  title={t("roles.product_moderation")}
+                  desc={t("roles.hide_or_remove_listings")}
                 />
                 {primaryRole === "super_admin" && (
                   <QuickLink
                     to="/super-admin/dashboard"
                     icon={Crown}
-                    title="Super admin"
-                    desc="Full platform control"
+                    title={t("roles.super_admin")}
+                    desc={t("roles.full_platform_control")}
                   />
                 )}
               </>
@@ -341,21 +354,21 @@ function DashboardPage() {
               <QuickLink
                 to="/delivery/dashboard"
                 icon={Truck}
-                title="Delivery workbench"
-                desc="Claim & update deliveries"
+                title={t("roles.delivery_workbench")}
+                desc={t("roles.claim_update_deliveries")}
               />
             )}
             <QuickLink
               to="/shop"
               icon={ShoppingBag}
-              title="Go to storefront"
-              desc="Browse the live shop"
+              title={t("roles.go_to_storefront")}
+              desc={t("roles.browse_live_shop")}
             />
             <QuickLink
               to="/profile"
               icon={Users}
-              title="My profile"
-              desc="Edit your details & roles"
+              title={t("roles.my_profile")}
+              desc={t("roles.edit_your_details_roles")}
             />
           </div>
         </div>

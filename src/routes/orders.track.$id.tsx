@@ -1,7 +1,8 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Package, Truck, MapPin, Check, ChevronLeft, X } from "lucide-react";
+import { createFileRoute, Link, notFound, type ErrorComponentProps } from "@tanstack/react-router";
+import { Package, Truck, MapPin, Check, ChevronLeft, X, Star } from "lucide-react";
 import { ORDERS, STATUS_META, type OrderStatus, type Order } from "@/lib/mock-orders";
 import { formatXAF } from "@/lib/mock-data";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/orders/track/$id")({
   component: TrackOrderPage,
@@ -11,30 +12,40 @@ export const Route = createFileRoute("/orders/track/$id")({
     return { order };
   },
   head: ({ params }) => ({ meta: [{ title: `Track ${params.id} — J-STORE.cm` }] }),
-  notFoundComponent: () => (
-    <div className="mx-auto max-w-md py-20 px-6 text-center">
-      <h1 className="font-display text-2xl font-bold">Order not found</h1>
-      <p className="text-sm text-muted-foreground mt-2">
-        We couldn't find an order with that reference.
-      </p>
-      <Link to="/orders" className="inline-block mt-6 text-gold font-medium">
-        Back to my orders →
-      </Link>
-    </div>
-  ),
-  errorComponent: ({ error }) => (
-    <div className="mx-auto max-w-md py-20 px-6 text-center">
-      <h1 className="font-display text-2xl font-bold">Something went wrong</h1>
-      <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
-    </div>
-  ),
+  notFoundComponent: OrderNotFound,
+  errorComponent: OrderError,
 });
 
-const FLOW: { status: OrderStatus; icon: typeof Check; label: string }[] = [
-  { status: "placed", icon: Check, label: "Order placed" },
-  { status: "packed", icon: Package, label: "Packed by seller" },
-  { status: "shipping", icon: Truck, label: "Out for delivery" },
-  { status: "delivered", icon: MapPin, label: "Delivered" },
+function OrderNotFound() {
+  const { t } = useI18n();
+  return (
+    <div className="mx-auto max-w-md py-20 px-6 text-center">
+      <h1 className="font-display text-2xl font-bold">{t("order.notFound")}</h1>
+      <p className="text-sm text-muted-foreground mt-2">{t("order.referenceMissing")}</p>
+      <Link to="/orders" className="inline-block mt-6 text-gold font-medium">
+        {t("order.backToOrders")}
+      </Link>
+    </div>
+  );
+}
+
+function OrderError({ error }: ErrorComponentProps) {
+  const { t } = useI18n();
+  return (
+    <div className="mx-auto max-w-md py-20 px-6 text-center">
+      <h1 className="font-display text-2xl font-bold">{t("common.somethingWrong")}</h1>
+      <p className="text-sm text-muted-foreground mt-2">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
+    </div>
+  );
+}
+
+const FLOW: { status: OrderStatus; icon: typeof Check; key: string }[] = [
+  { status: "placed", icon: Check, key: "order.placedStatus" },
+  { status: "packed", icon: Package, key: "order.packedBySeller" },
+  { status: "shipping", icon: Truck, key: "order.outForDelivery" },
+  { status: "delivered", icon: MapPin, key: "order.delivered" },
 ];
 
 function progressIndex(status: OrderStatus) {
@@ -43,9 +54,17 @@ function progressIndex(status: OrderStatus) {
 }
 
 function TrackOrderPage() {
+  const { t } = useI18n();
   const { order } = Route.useLoaderData() as { order: Order };
   const current = progressIndex(order.status);
   const meta = STATUS_META[order.status];
+  const statusTextKey: Record<OrderStatus, string> = {
+    placed: "order.placedStatus",
+    packed: "order.packedBySeller",
+    shipping: "order.outForDelivery",
+    delivered: "order.delivered",
+    cancelled: "order.cancelled",
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -53,7 +72,7 @@ function TrackOrderPage() {
         to="/orders"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
-        <ChevronLeft className="h-4 w-4" /> All orders
+        <ChevronLeft className="h-4 w-4" /> {t("order.allOrders")}
       </Link>
 
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -66,7 +85,7 @@ function TrackOrderPage() {
         <span
           className={`text-xs uppercase tracking-wider font-semibold px-3 py-1.5 rounded-full ${meta.tone}`}
         >
-          {meta.label}
+          {t(statusTextKey[order.status])}
         </span>
       </div>
 
@@ -76,10 +95,8 @@ function TrackOrderPage() {
             <X className="h-6 w-6" />
           </div>
           <div>
-            <p className="font-semibold">This order was cancelled</p>
-            <p className="text-sm text-muted-foreground">
-              Any payment has been refunded to your MoMo wallet within 24h.
-            </p>
+            <p className="font-semibold">{t("order.cancelled")}</p>
+            <p className="text-sm text-muted-foreground">{t("order.refundToWallet")}</p>
           </div>
         </div>
       ) : (
@@ -105,10 +122,12 @@ function TrackOrderPage() {
                   </div>
                   <div className="pb-8">
                     <p className={`font-medium ${done ? "" : "text-muted-foreground"}`}>
-                      {s.label}
+                      {t(s.key)}
                     </p>
                     {active && order.eta && (
-                      <p className="text-xs text-gold mt-1 font-medium">Expected {order.eta}</p>
+                      <p className="text-xs text-gold mt-1 font-medium">
+                        {t("order.expected", { eta: order.eta })}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -124,31 +143,38 @@ function TrackOrderPage() {
             {order.rider[0]}
           </div>
           <div className="flex-1">
-            <p className="font-semibold">{order.rider} — your J-STORE rider</p>
-            <p className="text-xs text-navy-foreground/70">4.95 ★ · 1 200+ deliveries</p>
+            <p className="font-semibold">{t("order.rider", { name: order.rider })}</p>
+            <p className="text-xs text-navy-foreground/70">
+              4.95 <Star className="inline h-3 w-3 fill-current align-[-0.1em]" />{" "}
+              {t("order.deliveryCount")}
+            </p>
           </div>
           <button className="rounded-full bg-gold text-gold-foreground px-4 py-2 text-sm font-medium">
-            Call
+            {t("order.call")}
           </button>
         </div>
       )}
 
       {/* Items */}
       <div className="mt-8 bg-card border border-border rounded-3xl p-6">
-        <h2 className="font-display font-semibold mb-4">Items ({order.itemsCount})</h2>
+        <h2 className="font-display font-semibold mb-4">
+          {t("order.items", { count: order.itemsCount })}
+        </h2>
         <ul className="divide-y divide-border">
           {order.items.map((it, idx) => (
             <li key={idx} className="py-3 flex items-center justify-between gap-4 text-sm">
               <div className="min-w-0">
                 <p className="font-medium truncate">{it.name}</p>
-                <p className="text-xs text-muted-foreground">Qty {it.qty}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("checkout.quantity", { qty: it.qty })}
+                </p>
               </div>
               <p className="font-semibold shrink-0">{formatXAF(it.price * it.qty)}</p>
             </li>
           ))}
         </ul>
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Total</span>
+          <span className="text-sm text-muted-foreground">{t("cart.total")}</span>
           <span className="font-display text-lg font-bold">{formatXAF(order.total)}</span>
         </div>
       </div>

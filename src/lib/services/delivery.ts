@@ -104,6 +104,9 @@ export const deliveryService = {
       .single();
     if (error) throw error;
     if (status === "approved") {
+      if (!data.user_id) {
+        throw new Error("Cannot approve a delivery application without an associated user.");
+      }
       await usersService.grantRole(data.user_id, "delivery");
     }
   },

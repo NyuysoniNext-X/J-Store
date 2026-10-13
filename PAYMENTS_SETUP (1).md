@@ -13,8 +13,13 @@ wherever your website is hosted and your API keys never reach the browser.
 5. **Send manually** (old flow) still works as a fallback; admins confirm it from the payments page.
 
 ## Step 1 — Database
-Supabase -> SQL Editor -> paste and run `supabase/migrations/20260926000001_payment_api.sql`.
-(Adds a table + functions, changes no existing data. Safe to re-run.)
+Apply the migrations in order, including:
+- `supabase/migrations/20260926000001_payment_api.sql`
+- `supabase/migrations/20261012000001_checkout_payment_safety.sql`
+
+The checkout safety migration makes delivery fees server-calculated, stores the
+reserved variant on each order item, restores stock on manual-payment rejection,
+and adds the `cancel_unpaid_order_groups` function used by reconciliation.
 
 ## Step 2 — Deploy the function (pick one)
 **CLI:** `supabase functions deploy payments --no-verify-jwt`
@@ -61,11 +66,11 @@ fast your site learns about it. Three layers cover it:
    the buyer or on a lost callback.
 
 Set up layer 3:
-1. SQL Editor -> run `supabase/migrations/20260926000002_payment_reconcile.sql`.
-2. Dashboard -> Database -> Extensions -> enable **pg_cron** and **pg_net**.
-3. Edge Functions -> Secrets -> add `CRON_SECRET` (a long random string).
-4. Open `supabase/scheduled_reconcile.sql`, fill in your project ref and the same secret, run it once.
-5. Redeploy the `payments` function (new version of `index.ts`).
+1. Dashboard -> Database -> Extensions -> enable **pg_cron**, **pg_net**, and **Vault**.
+2. Add a Vault secret named `payments_cron_secret` and set the Edge Function secret
+   `CRON_SECRET` to the same long random value.
+3. Run `supabase/scheduled_reconcile.sql` once in the SQL Editor.
+4. Redeploy the `payments` function (new version of `index.ts`).
 
 What the job does besides re-checking:
 - **Cancels unpaid instant-payment orders** after about 1 hour and **puts the stock back**. The buyer is

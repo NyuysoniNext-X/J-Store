@@ -20,20 +20,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RoleSwitcher } from "@/components/account/RoleSwitcher";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
   head: () => ({ meta: [{ title: "My profile — J-STORE.cm" }] }),
 });
 
-const ROLE_META: Record<AppRole, { label: string; icon: typeof UserIcon; color: string }> = {
-  customer: { label: "Customer", icon: UserIcon, color: "bg-secondary text-foreground" },
-  seller: { label: "Seller", icon: Store, color: "bg-gold/15 text-gold border border-gold/30" },
-  delivery: { label: "Delivery", icon: Truck, color: "bg-gold/15 text-gold border border-gold/30" },
-  admin: { label: "Admin", icon: Shield, color: "bg-navy text-navy-foreground" },
-  super_admin: { label: "Super admin", icon: Shield, color: "bg-gold text-gold-foreground" },
+const ROLE_META: Record<AppRole, { key: string; icon: typeof UserIcon; color: string }> = {
+  customer: { key: "profile.customer", icon: UserIcon, color: "bg-secondary text-foreground" },
+  seller: {
+    key: "profile.seller",
+    icon: Store,
+    color: "bg-gold/15 text-gold border border-gold/30",
+  },
+  delivery: {
+    key: "profile.delivery",
+    icon: Truck,
+    color: "bg-gold/15 text-gold border border-gold/30",
+  },
+  admin: { key: "profile.admin", icon: Shield, color: "bg-navy text-navy-foreground" },
+  super_admin: {
+    key: "profile.superAdmin",
+    icon: Shield,
+    color: "bg-gold text-gold-foreground",
+  },
   partner: {
-    label: "Partner",
+    key: "profile.partner",
     icon: Handshake,
     color: "bg-gold/15 text-gold border border-gold/30",
   },
@@ -41,6 +54,7 @@ const ROLE_META: Record<AppRole, { label: string; icon: typeof UserIcon; color: 
 
 function ProfilePage() {
   const { user, roles, signOut, refreshRoles } = useAuth();
+  const { setLang, t } = useI18n();
   const qc = useQueryClient();
   const [form, setForm] = useState({
     display_name: "",
@@ -66,15 +80,20 @@ function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      const preferredLanguage =
+        profile.preferred_language === "fr" || profile.preferred_language === "en"
+          ? profile.preferred_language
+          : "en";
       setForm({
         display_name: profile.display_name ?? "",
         phone: profile.phone ?? "",
         city: profile.city ?? "",
         country: profile.country ?? "Cameroon",
-        preferred_language: profile.preferred_language ?? "en",
+        preferred_language: preferredLanguage,
       });
+      if (!localStorage.getItem("jstore.lang")) setLang(preferredLanguage);
     }
-  }, [profile]);
+  }, [profile, setLang]);
 
   const [roleLoading, setRoleLoading] = useState(false);
 
@@ -83,7 +102,7 @@ function ProfilePage() {
     setRoleLoading(true);
 
     if (roles.includes("seller")) {
-      toast.info("You're already a seller!");
+      toast.info(t("profile.alreadySeller"));
       setRoleLoading(false);
       return;
     }
@@ -97,25 +116,23 @@ function ProfilePage() {
     const appError = result.error;
 
     if (appError) {
-      toast.error("Error checking application status");
+      toast.error(t("profile.applicationCheckError"));
       setRoleLoading(false);
       return;
     }
 
     if (!application) {
-      toast.error("Please apply to become a seller first", {
-        description: "Go to Seller Registration to submit your application.",
+      toast.error(t("profile.applyFirst"), {
+        description: t("profile.registrationHint"),
       });
       setRoleLoading(false);
       return;
     }
 
     if (application.status !== "approved") {
-      toast.error("Your seller application is still pending approval", {
+      toast.error(t("profile.pendingApproval"), {
         description:
-          application.status === "pending"
-            ? "Wait for admin approval."
-            : "Your application was rejected. Please re-apply.",
+          application.status === "pending" ? t("profile.waitApproval") : t("profile.reapply"),
       });
       setRoleLoading(false);
       return;
@@ -128,7 +145,7 @@ function ProfilePage() {
     if (error) {
       toast.error("Failed to activate seller: " + error.message);
     } else {
-      toast.success("Seller account activated!");
+      toast.success(t("profile.sellerActivated"));
       await refreshRoles();
     }
 
@@ -139,11 +156,7 @@ function ProfilePage() {
     if (!user) return;
     setRoleLoading(true);
 
-    if (
-      !confirm(
-        "Are you sure you want to release your seller role? You'll lose access to seller features.",
-      )
-    ) {
+    if (!confirm(t("profile.confirmRelease"))) {
       setRoleLoading(false);
       return;
     }
@@ -157,7 +170,7 @@ function ProfilePage() {
     if (error) {
       toast.error("Failed to release seller role: " + error.message);
     } else {
-      toast.success("Seller role released. You're now a customer.");
+      toast.success(t("profile.sellerReleased"));
       await refreshRoles();
     }
 
@@ -178,7 +191,10 @@ function ProfilePage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Profile updated");
+      toast.success(t("profile.updated"));
+      if (form.preferred_language === "en" || form.preferred_language === "fr") {
+        setLang(form.preferred_language);
+      }
       qc.invalidateQueries({ queryKey: ["profile", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -199,22 +215,22 @@ function ProfilePage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">
-            My account
+            {t("profile.myAccount")}
           </p>
           <h1 className="font-display text-3xl md:text-4xl font-bold">
-            {form.display_name || "Your profile"}
+            {form.display_name || t("profile.yourProfile")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
         </div>
         <Button variant="outline" onClick={() => signOut()} className="rounded-full">
-          <LogOut className="h-4 w-4 mr-2" /> Sign out
+          <LogOut className="h-4 w-4 mr-2" /> {t("nav.signOut")}
         </Button>
       </div>
 
       {/* Roles */}
       <div className="flex flex-wrap gap-2 mb-8">
         {roles.length === 0 && (
-          <span className="text-sm text-muted-foreground">No roles assigned</span>
+          <span className="text-sm text-muted-foreground">{t("profile.noRoles")}</span>
         )}
         {roles.map((r) => {
           const meta = ROLE_META[r];
@@ -224,7 +240,7 @@ function ProfilePage() {
               key={r}
               className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${meta.color}`}
             >
-              <Icon className="h-3.5 w-3.5" /> {meta.label}
+              <Icon className="h-3.5 w-3.5" /> {t(meta.key)}
             </span>
           );
         })}
@@ -232,31 +248,25 @@ function ProfilePage() {
 
       {/* Roles & Access Card */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-8">
-        <h2 className="font-semibold text-lg mb-4">Roles & Access</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Switch on the role you need. Admin access is granted manually by the platform team.
-        </p>
+        <h2 className="font-semibold text-lg mb-4">{t("profile.rolesAccess")}</h2>
+        <p className="text-sm text-muted-foreground mb-4">{t("profile.roleInstructions")}</p>
 
         {/* Customer - Always active */}
         <div className="flex items-center justify-between py-3 border-b border-border">
           <div>
-            <p className="font-medium">Customer</p>
-            <p className="text-sm text-muted-foreground">
-              Buy products, track orders, leave reviews.
-            </p>
+            <p className="font-medium">{t("profile.customer")}</p>
+            <p className="text-sm text-muted-foreground">{t("profile.buyTrackReview")}</p>
           </div>
-          <span className="inline-flex items-center gap-1 text-sm text-green-600">
-            <CheckCircle className="h-4 w-4" /> Active
+          <span className="inline-flex items-center gap-1 text-sm text-gold-700">
+            <CheckCircle className="h-4 w-4" /> {t("profile.active")}
           </span>
         </div>
 
         {/* Seller - Toggleable */}
         <div className="flex items-center justify-between py-3">
           <div>
-            <p className="font-medium">Seller</p>
-            <p className="text-sm text-muted-foreground">
-              List products, manage orders, withdraw earnings.
-            </p>
+            <p className="font-medium">{t("profile.seller")}</p>
+            <p className="text-sm text-muted-foreground">{t("profile.listManageWithdraw")}</p>
           </div>
           <Button
             onClick={handleActivateSeller}
@@ -275,7 +285,7 @@ function ProfilePage() {
             ) : (
               <CheckCircle className="h-4 w-4 mr-2" />
             )}
-            {isSeller ? "Release" : "Activate"}
+            {isSeller ? t("profile.release") : t("profile.activate")}
           </Button>
         </div>
       </div>
@@ -289,8 +299,8 @@ function ProfilePage() {
           >
             <Store className="h-5 w-5 text-gold" />
             <div>
-              <p className="font-semibold text-sm">Seller dashboard</p>
-              <p className="text-xs text-muted-foreground">Manage your products & orders</p>
+              <p className="font-semibold text-sm">{t("nav.sellerDashboard")}</p>
+              <p className="text-xs text-muted-foreground">{t("profile.manageProductsOrders")}</p>
             </div>
           </Link>
         )}
@@ -301,8 +311,8 @@ function ProfilePage() {
           >
             <Truck className="h-5 w-5 text-gold" />
             <div>
-              <p className="font-semibold text-sm">Delivery dashboard</p>
-              <p className="text-xs text-muted-foreground">Claim pickups and update deliveries</p>
+              <p className="font-semibold text-sm">{t("nav.deliveryDashboard")}</p>
+              <p className="text-xs text-muted-foreground">{t("profile.claimDeliveries")}</p>
             </div>
           </Link>
         )}
@@ -313,8 +323,8 @@ function ProfilePage() {
           >
             <Shield className="h-5 w-5 text-gold" />
             <div>
-              <p className="font-semibold text-sm">Admin dashboard</p>
-              <p className="text-xs text-muted-foreground">Platform moderation & settings</p>
+              <p className="font-semibold text-sm">{t("nav.adminDashboard")}</p>
+              <p className="text-xs text-muted-foreground">{t("profile.moderationSettings")}</p>
             </div>
           </Link>
         )}
@@ -325,8 +335,8 @@ function ProfilePage() {
           >
             <Store className="h-5 w-5 text-gold" />
             <div>
-              <p className="font-semibold text-sm">Become a seller</p>
-              <p className="text-xs text-muted-foreground">Open your shop on J-STORE</p>
+              <p className="font-semibold text-sm">{t("profile.becomeSeller")}</p>
+              <p className="text-xs text-muted-foreground">{t("profile.openShop")}</p>
             </div>
           </Link>
         )}
@@ -342,8 +352,8 @@ function ProfilePage() {
               <Store className="h-5 w-5 text-gold" />
             )}
             <div>
-              <p className="font-semibold text-sm">Release seller role</p>
-              <p className="text-xs text-muted-foreground">Revert to customer account</p>
+              <p className="font-semibold text-sm">{t("profile.releaseSellerRole")}</p>
+              <p className="text-xs text-muted-foreground">{t("profile.revertCustomer")}</p>
             </div>
           </button>
         )}
@@ -362,10 +372,10 @@ function ProfilePage() {
         }}
         className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-elegant space-y-5"
       >
-        <h2 className="font-display text-xl font-bold">Personal details</h2>
+        <h2 className="font-display text-xl font-bold">{t("profile.personalDetails")}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="display_name">Display name</Label>
+            <Label htmlFor="display_name">{t("profile.displayName")}</Label>
             <Input
               id="display_name"
               value={form.display_name}
@@ -384,7 +394,7 @@ function ProfilePage() {
             />
           </div>
           <div>
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="city">{t("profile.city")}</Label>
             <Input
               id="city"
               value={form.city}
@@ -394,7 +404,7 @@ function ProfilePage() {
             />
           </div>
           <div>
-            <Label htmlFor="country">Country</Label>
+            <Label htmlFor="country">{t("profile.country")}</Label>
             <Input
               id="country"
               value={form.country}
@@ -403,7 +413,7 @@ function ProfilePage() {
             />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="lang">Preferred language</Label>
+            <Label htmlFor="lang">{t("profile.preferredLanguage")}</Label>
             <div className="mt-1 flex gap-2">
               {(["en", "fr"] as const).map((l) => (
                 <button
@@ -429,7 +439,7 @@ function ProfilePage() {
             className="rounded-full h-11 px-7 bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
           >
             {updateMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Save changes
+            {t("profile.saveChanges")}
           </Button>
         </div>
       </form>

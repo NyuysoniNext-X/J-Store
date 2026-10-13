@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/_partner/partner/dashboard
 });
 
 function PartnerDashboard() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
@@ -53,9 +55,9 @@ function PartnerDashboard() {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast.success("Referral link copied");
+      toast.success(t("roles.referral_link_copied"));
     } catch {
-      toast.error("Unable to copy referral link");
+      toast.error(t("roles.unable_to_copy_referral_link"));
     }
     setTimeout(() => setCopied(false), 2000);
   };
@@ -73,7 +75,7 @@ function PartnerDashboard() {
         <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">
           Partner dashboard
         </p>
-        <h1 className="font-display text-3xl md:text-4xl font-bold">Welcome back</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold">{t("roles.welcome_back")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
       </div>
 
@@ -124,7 +126,7 @@ function PartnerDashboard() {
 
       {/* Commission ledger */}
       <div className="bg-card border border-border rounded-2xl p-6">
-        <h2 className="font-display font-semibold mb-4">Commission history</h2>
+        <h2 className="font-display font-semibold mb-4">{t("roles.commission_history")}</h2>
         {commissions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No commissions yet — they appear once a referred buyer's order is completed.
@@ -143,7 +145,7 @@ function PartnerDashboard() {
                   className={
                     "text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full " +
                     (c.status === "paid"
-                      ? "bg-emerald/15 text-emerald"
+                      ? "bg-gold/15 text-gold-700"
                       : c.status === "confirmed"
                         ? "bg-gold/15 text-gold"
                         : "bg-secondary text-muted-foreground")

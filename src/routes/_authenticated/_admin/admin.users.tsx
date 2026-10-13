@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -48,12 +49,28 @@ type RoleAction = {
 };
 
 const MANAGEABLE_ROLES: { role: AppRole; label: string; icon: typeof UserIcon; color: string }[] = [
-  { role: "customer", label: "Customer", icon: UserIcon, color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
-  { role: "seller", label: "Seller", icon: Store, color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
-  { role: "delivery", label: "Delivery", icon: Truck, color: "bg-green-500/10 text-green-600 border-green-500/30" },
+  {
+    role: "customer",
+    label: "Customer",
+    icon: UserIcon,
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  },
+  {
+    role: "seller",
+    label: "Seller",
+    icon: Store,
+    color: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  },
+  {
+    role: "delivery",
+    label: "Delivery",
+    icon: Truck,
+    color: "bg-gold-500/10 text-gold-700 border-gold-500/30",
+  },
 ];
 
 function AdminUsers() {
+  const { t } = useI18n();
   const { user: currentUser, hasRole } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -81,8 +98,10 @@ function AdminUsers() {
 
       // Combine data
       return profiles.map((profile) => {
-        const userRoles = roles.filter((r) => r.user_id === profile.id).map((r) => r.role as AppRole);
-        
+        const userRoles = roles
+          .filter((r) => r.user_id === profile.id)
+          .map((r) => r.role as AppRole);
+
         return {
           id: profile.id,
           display_name: profile.display_name,
@@ -98,9 +117,7 @@ function AdminUsers() {
   // Grant role mutation
   const grantRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: userId, role });
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
       if (error) throw error;
     },
     onSuccess: (_, { role }) => {
@@ -150,9 +167,9 @@ function AdminUsers() {
       (u.display_name && u.display_name.toLowerCase().includes(search.toLowerCase())) ||
       u.id.toLowerCase().includes(search.toLowerCase()) ||
       (u.phone && u.phone.includes(search));
-    
+
     const matchesRole = roleFilter === "all" || u.roles.includes(roleFilter);
-    
+
     return matchesSearch && matchesRole;
   });
 
@@ -173,12 +190,15 @@ function AdminUsers() {
   };
 
   return (
-    <div className="mx-auto max-w-[1536px] px-6 py-10">
+    <div className="mx-auto max-w-384 px-6 py-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold mb-2">User & Role Management</h1>
+        <h1 className="font-display text-3xl font-bold mb-2">{t("roles.user_role_management")}</h1>
         <p className="text-muted-foreground">
-          Manage user roles and permissions. {isSuperAdmin ? "Super admins can manage all roles." : "Admins can manage customer, seller, and delivery roles."}
+          Manage user roles and permissions.{" "}
+          {isSuperAdmin
+            ? "Super admins can manage all roles."
+            : "Admins can manage customer, seller, and delivery roles."}
         </p>
       </div>
 
@@ -188,20 +208,20 @@ function AdminUsers() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, phone, or ID..."
+              placeholder={t("roles.search_by_name_phone_or_id")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
           <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | "all")}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Filter by role" />
+            <SelectTrigger className="w-full sm:w-50">
+              <SelectValue placeholder={t("roles.filter_by_role")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All roles</SelectItem>
-              <SelectItem value="customer">Customer</SelectItem>
-              <SelectItem value="seller">Seller</SelectItem>
+              <SelectItem value="all">{t("roles.all_roles")}</SelectItem>
+              <SelectItem value="customer">{t("roles.customer")}</SelectItem>
+              <SelectItem value="seller">{t("roles.seller")}</SelectItem>
               <SelectItem value="delivery">Delivery</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="super_admin">Super Admin</SelectItem>
@@ -213,25 +233,28 @@ function AdminUsers() {
       {/* Stats */}
       <div className="grid sm:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">Total Users</div>
+          <div className="text-sm text-muted-foreground mb-1">{t("roles.total_users")}</div>
           <div className="text-2xl font-bold">{users.length}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">Sellers</div>
+          <div className="text-sm text-muted-foreground mb-1">{t("roles.sellers")}</div>
           <div className="text-2xl font-bold">
             {users.filter((u) => u.roles.includes("seller")).length}
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">Customers</div>
+          <div className="text-sm text-muted-foreground mb-1">{t("roles.customers")}</div>
           <div className="text-2xl font-bold">
             {users.filter((u) => u.roles.includes("customer")).length}
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">Admins</div>
+          <div className="text-sm text-muted-foreground mb-1">{t("roles.admins")}</div>
           <div className="text-2xl font-bold">
-            {users.filter((u) => u.roles.includes("admin") || u.roles.includes("super_admin")).length}
+            {
+              users.filter((u) => u.roles.includes("admin") || u.roles.includes("super_admin"))
+                .length
+            }
           </div>
         </Card>
       </div>
@@ -245,13 +268,15 @@ function AdminUsers() {
         <div className="space-y-3">
           {filteredUsers.length === 0 ? (
             <Card className="p-12 text-center">
-              <p className="text-muted-foreground">No users found matching your filters.</p>
+              <p className="text-muted-foreground">
+                {t("roles.no_users_found_matching_your_filters")}
+              </p>
             </Card>
           ) : (
             filteredUsers.map((u) => {
               const isCurrentUser = u.id === currentUser?.id;
-              const canManage = u.roles.every((r) => 
-                isSuperAdmin || !["admin", "super_admin"].includes(r)
+              const canManage = u.roles.every(
+                (r) => isSuperAdmin || !["admin", "super_admin"].includes(r),
               );
 
               return (
@@ -259,11 +284,11 @@ function AdminUsers() {
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">
-                          {u.display_name || "No name"}
-                        </h3>
+                        <h3 className="font-semibold truncate">{u.display_name || "No name"}</h3>
                         {isCurrentUser && (
-                          <Badge variant="outline" className="text-xs">You</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {t("roles.you")}
+                          </Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
@@ -272,31 +297,34 @@ function AdminUsers() {
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
                         ID: {u.id.slice(0, 8)}...
                       </p>
-                      
+
                       <div className="flex flex-wrap gap-2 mt-3">
                         {u.roles.length === 0 ? (
-                          <Badge variant="outline" className="text-xs">No roles</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {t("roles.no_roles")}
+                          </Badge>
                         ) : (
                           u.roles.map((role) => (
-                            <Badge
-                              key={role}
-                              className={`text-xs border ${getRoleColor(role)}`}
-                            >
+                            <Badge key={role} className={`text-xs border ${getRoleColor(role)}`}>
                               {getRoleIcon(role)}
                               <span className="ml-1.5 capitalize">{role.replace("_", " ")}</span>
-                              {canManage && !isCurrentUser && MANAGEABLE_ROLES.some(r => r.role === role) && (
-                                <button
-                                  onClick={() => setPendingAction({
-                                    userId: u.id,
-                                    userName: u.display_name || u.id.slice(0, 8),
-                                    role,
-                                    action: "revoke",
-                                  })}
-                                  className="ml-1.5 hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              )}
+                              {canManage &&
+                                !isCurrentUser &&
+                                MANAGEABLE_ROLES.some((r) => r.role === role) && (
+                                  <button
+                                    onClick={() =>
+                                      setPendingAction({
+                                        userId: u.id,
+                                        userName: u.display_name || u.id.slice(0, 8),
+                                        role,
+                                        action: "revoke",
+                                      })
+                                    }
+                                    className="ml-1.5 hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                )}
                             </Badge>
                           ))
                         )}
@@ -308,19 +336,21 @@ function AdminUsers() {
                         {MANAGEABLE_ROLES.map(({ role, label, icon: Icon }) => {
                           const hasRole = u.roles.includes(role);
                           if (hasRole) return null; // Already shown in badges above
-                          
+
                           return (
                             <Button
                               key={role}
                               size="sm"
                               variant="outline"
                               className="rounded-full h-8 text-xs"
-                              onClick={() => setPendingAction({
-                                userId: u.id,
-                                userName: u.display_name || u.id.slice(0, 8),
-                                role,
-                                action: "grant",
-                              })}
+                              onClick={() =>
+                                setPendingAction({
+                                  userId: u.id,
+                                  userName: u.display_name || u.id.slice(0, 8),
+                                  role,
+                                  action: "grant",
+                                })
+                              }
                             >
                               <Plus className="h-3 w-3 mr-1.5" />
                               Grant {label}
@@ -354,15 +384,18 @@ function AdminUsers() {
                 <>
                   You're about to revoke <strong>{pendingAction?.role}</strong> role from{" "}
                   <strong>{pendingAction?.userName}</strong>. They will lose access to{" "}
-                  {pendingAction?.role === "seller" ? "seller dashboard and all seller features" : 
-                   pendingAction?.role === "delivery" ? "delivery routes and order assignments" :
-                   "associated features"}.
+                  {pendingAction?.role === "seller"
+                    ? "seller dashboard and all seller features"
+                    : pendingAction?.role === "delivery"
+                      ? "delivery routes and order assignments"
+                      : "associated features"}
+                  .
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("roles.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingAction && handleRoleAction(pendingAction)}
               disabled={grantRole.isPending || revokeRole.isPending}

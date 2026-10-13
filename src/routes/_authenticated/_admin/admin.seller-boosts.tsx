@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -64,6 +65,7 @@ function endsAtFromDays(days: number | null): string | null {
 }
 
 function AdminSellerBoosts() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -147,18 +149,10 @@ function AdminSellerBoosts() {
           is_active: true,
         });
         if (error) throw error;
-
-        // Notify seller
-        await supabase.from("notifications").insert({
-          user_id: boostForm.sellerId,
-          title: `Your store has been boosted! ${boostForm.tier === "sponsored" ? "📣" : boostForm.tier === "top_seller" ? "⭐" : "🚀"}`,
-          body: `Your store is now listed as "${BOOST_TIER_LABELS[boostForm.tier]}"${endsAt ? ` until ${new Date(endsAt).toLocaleDateString()}` : " permanently"}.`,
-          type: "seller_boosted",
-        });
       }
     },
     onSuccess: () => {
-      toast.success("Boost applied");
+      toast.success(t("roles.boost_applied"));
       setBoostForm(null);
       qc.invalidateQueries({ queryKey: ["admin-seller-boosts"] });
       qc.invalidateQueries({ queryKey: ["active-boosts"] });
@@ -178,7 +172,7 @@ function AdminSellerBoosts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Boost removed");
+      toast.success(t("roles.boost_removed"));
       qc.invalidateQueries({ queryKey: ["admin-seller-boosts"] });
       qc.invalidateQueries({ queryKey: ["active-boosts"] });
     },
@@ -186,7 +180,7 @@ function AdminSellerBoosts() {
   });
 
   return (
-    <div className="mx-auto max-w-[1536px] px-6 py-10">
+    <div className="mx-auto max-w-384 px-6 py-10">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
         <div className="flex items-center gap-3">
@@ -194,15 +188,19 @@ function AdminSellerBoosts() {
             <Zap className="h-6 w-6 text-gold" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">Admin</p>
-            <h1 className="font-display text-3xl md:text-4xl font-bold">Seller boosts</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">
+              {t("roles.admin")}
+            </p>
+            <h1 className="font-display text-3xl md:text-4xl font-bold">
+              {t("roles.seller_boosts")}
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Control which sellers appear as Featured, Top Seller, or Sponsored.
+              {t("roles.control_seller_appearance")}
             </p>
           </div>
         </div>
         <Button variant="outline" size="sm" className="rounded-full" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-1.5" /> Refresh
+          <RefreshCw className="h-4 w-4 mr-1.5" /> {t("roles.refresh")}
         </Button>
       </div>
 
@@ -215,10 +213,10 @@ function AdminSellerBoosts() {
               <Icon className="h-5 w-5 mb-2 opacity-70" />
               <p className="font-semibold text-sm">{BOOST_TIER_LABELS[tier]}</p>
               <p className="text-xs opacity-70 mt-1">
-                {tier === "normal" && "Default listing — all sellers"}
-                {tier === "featured" && "Appears in homepage featured section"}
-                {tier === "top_seller" && "Badge + priority in search results"}
-                {tier === "sponsored" && "Pinned at top of category pages"}
+                {tier === "normal" && t("roles.default_listing_all_sellers")}
+                {tier === "featured" && t("roles.appears_homepage_featured")}
+                {tier === "top_seller" && t("roles.badge_priority_search_results")}
+                {tier === "sponsored" && t("roles.pinned_category_pages")}
               </p>
             </div>
           );
@@ -229,14 +227,14 @@ function AdminSellerBoosts() {
       {boostForm && (
         <div className="bg-card border border-gold/40 rounded-2xl p-6 mb-6 space-y-4">
           <h3 className="font-display font-semibold">
-            Setting boost for{" "}
+            {t("roles.setting_boost_for")}{" "}
             <span className="text-gold">
               {sellers.find((s) => s.id === boostForm.sellerId)?.display_name ?? "seller"}
             </span>
           </h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium block mb-1.5">Tier</label>
+              <label className="text-xs font-medium block mb-1.5">{t("roles.tier")}</label>
               <select
                 value={boostForm.tier}
                 onChange={(e) =>
@@ -254,28 +252,34 @@ function AdminSellerBoosts() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium block mb-1.5">Duration</label>
+              <label className="text-xs font-medium block mb-1.5">{t("roles.duration")}</label>
               <select
                 value={boostForm.days === null ? "null" : boostForm.days}
                 onChange={(e) =>
-                  setBoostForm((f) =>
-                    f && { ...f, days: e.target.value === "null" ? null : Number(e.target.value) },
+                  setBoostForm(
+                    (f) =>
+                      f && {
+                        ...f,
+                        days: e.target.value === "null" ? null : Number(e.target.value),
+                      },
                   )
                 }
                 className="w-full h-10 rounded-lg px-3 bg-secondary border border-transparent focus:outline-none focus:border-gold text-sm"
               >
                 {DURATION_PRESETS.map((p) => (
                   <option key={p.label} value={p.days === null ? "null" : p.days}>
-                    {p.label}
+                    {p.days === null ? t("roles.permanent") : t(`roles.${p.days}_days`)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="text-xs font-medium block mb-1.5">Reason (internal, optional)</label>
+              <label className="text-xs font-medium block mb-1.5">
+                {t("roles.reason_internal_optional")}
+              </label>
               <input
                 className="w-full h-10 rounded-lg px-3 bg-secondary border border-transparent focus:outline-none focus:border-gold text-sm"
-                placeholder="e.g. Paid promotion, top performer…"
+                placeholder={t("roles.promotion_reason_example")}
                 value={boostForm.reason}
                 onChange={(e) => setBoostForm((f) => f && { ...f, reason: e.target.value })}
               />
@@ -293,7 +297,7 @@ function AdminSellerBoosts() {
               ) : (
                 <Zap className="h-4 w-4 mr-1" />
               )}
-              Apply boost
+              {t("roles.apply_boost")}
             </Button>
             <Button
               size="sm"
@@ -301,7 +305,7 @@ function AdminSellerBoosts() {
               className="rounded-full"
               onClick={() => setBoostForm(null)}
             >
-              Cancel
+              {t("roles.cancel")}
             </Button>
           </div>
         </div>
@@ -314,18 +318,18 @@ function AdminSellerBoosts() {
         </div>
       ) : enrichedSellers.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <p className="text-muted-foreground">No approved sellers yet.</p>
+          <p className="text-muted-foreground">{t("roles.no_approved_sellers_yet")}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[540px]">
+            <table className="w-full text-sm min-w-135">
               <thead className="text-xs text-muted-foreground border-b border-border bg-muted/30">
                 <tr>
-                  <th className="text-left font-medium px-5 py-3">Seller</th>
-                  <th className="text-left font-medium px-5 py-3">Current tier</th>
-                  <th className="text-left font-medium px-5 py-3">Expires</th>
-                  <th className="text-right font-medium px-5 py-3">Actions</th>
+                  <th className="text-left font-medium px-5 py-3">{t("roles.seller")}</th>
+                  <th className="text-left font-medium px-5 py-3">{t("roles.current_tier")}</th>
+                  <th className="text-left font-medium px-5 py-3">{t("roles.expires")}</th>
+                  <th className="text-right font-medium px-5 py-3">{t("roles.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -341,10 +345,7 @@ function AdminSellerBoosts() {
                         </p>
                       </td>
                       <td className="px-5 py-4">
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 text-xs ${TIER_COLORS[tier]}`}
-                        >
+                        <Badge variant="outline" className={`gap-1 text-xs ${TIER_COLORS[tier]}`}>
                           <TierIcon className="h-3 w-3" />
                           {BOOST_TIER_LABELS[tier]}
                         </Badge>
@@ -371,7 +372,7 @@ function AdminSellerBoosts() {
                           }
                         >
                           <Zap className="h-3.5 w-3.5 mr-1 text-gold" />
-                          {tier === "normal" ? "Boost" : "Change"}
+                          {tier === "normal" ? t("roles.boost") : t("roles.change")}
                         </Button>
                         {tier !== "normal" && (
                           <Button
@@ -381,7 +382,7 @@ function AdminSellerBoosts() {
                             disabled={removeBoost.isPending}
                             onClick={() => removeBoost.mutate(s.id)}
                           >
-                            Remove
+                            {t("roles.remove")}
                           </Button>
                         )}
                       </td>

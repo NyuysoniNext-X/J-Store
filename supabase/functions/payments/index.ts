@@ -261,6 +261,7 @@ const EXPIRE_AFTER_MS = 15 * 60 * 1000;
 
 // allowClosed: also re-check attempts WE marked "expired" — a buyer can approve a
 // prompt late (e.g. after a network crash and retry), and money must not be lost.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function checkAndFinalize(a: any, opts: { allowClosed?: boolean } = {}): Promise<any> {
   const reopened = opts.allowClosed === true && a.status === "expired";
   if (a.status !== "pending" && !reopened) return a;
@@ -420,7 +421,7 @@ async function authUser(req: Request) {
 async function loadGroup(id: string, userId: string) {
   const { data } = await admin
     .from("order_groups")
-    .select("id, buyer_id, total, payment_status, group_number")
+    .select("id, buyer_id, total, payment_status, payment_method, group_number")
     .eq("id", id)
     .maybeSingle();
   if (!data || data.buyer_id !== userId) return null;
@@ -436,6 +437,9 @@ async function initiate(user: any, body: any) {
   const group = await loadGroup(String(body?.order_group_id ?? ""), user.id);
   if (!group) return { error: "Order not found." };
   if (group.payment_status !== "pending") return { error: "This order is already paid." };
+  const expectedProvider = group.payment_method === "mtn_momo" ? "mtn" : "orange";
+  if (provider !== expectedProvider)
+    return { error: `This order was created for ${expectedProvider === "mtn" ? "MTN MoMo" : "Orange Money"}.` };
 
   // The charged amount ALWAYS comes from the database, never from the browser.
   const amount = Math.round(Number(group.total));

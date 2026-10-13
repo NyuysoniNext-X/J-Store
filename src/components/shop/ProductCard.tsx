@@ -9,20 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/shop/StarRating";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { SellerBoostTier } from "@/lib/types";
+import { BOOST_TIER_LABELS, type SellerBoostTier } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 
 const BOOST_ICONS: Record<SellerBoostTier, React.ElementType | null> = {
   normal: null,
   featured: Star,
   top_seller: Crown,
   sponsored: Megaphone,
-};
-
-const BOOST_LABELS: Record<SellerBoostTier, string> = {
-  normal: "",
-  featured: "Featured",
-  top_seller: "Top Seller",
-  sponsored: "Sponsored",
 };
 
 const BOOST_COLORS: Record<SellerBoostTier, string> = {
@@ -41,6 +35,7 @@ export function ProductCard({
   index?: number;
   boostTier?: SellerBoostTier;
 }) {
+  const { t } = useI18n();
   const add = useCart((s) => s.add);
   const toggleWish = useWishlist((s) => s.toggle);
   const wished = useWishlist((s) => s.ids.includes(product.id));
@@ -97,14 +92,29 @@ export function ProductCard({
           {(product.badge || discount > 0 || showBoost) && (
             <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
               {showBoost && BoostIcon && (
-                <Badge className={cn("uppercase tracking-wider text-[10px] gap-1", BOOST_COLORS[boostTier])}>
+                <Badge
+                  className={cn(
+                    "uppercase tracking-wider text-[10px] gap-1",
+                    BOOST_COLORS[boostTier],
+                  )}
+                >
                   <BoostIcon className="h-3 w-3" />
-                  {BOOST_LABELS[boostTier]}
+                  {boostTier === "featured"
+                    ? t("product.featured")
+                    : boostTier === "top_seller"
+                      ? t("product.topSeller")
+                      : t("product.sponsored")}
                 </Badge>
               )}
               {product.badge && (
                 <Badge className={cn("uppercase tracking-wider text-[10px]", badgeColor)}>
-                  {product.badge}
+                  {product.badge === "hot"
+                    ? t("product.badgeHot")
+                    : product.badge === "new"
+                      ? t("product.badgeNew")
+                      : product.badge === "sale"
+                        ? t("product.badgeSale")
+                        : product.badge}
                 </Badge>
               )}
               {discount > 0 && (
@@ -118,10 +128,12 @@ export function ProductCard({
             onClick={(e) => {
               e.preventDefault();
               toggleWish(product.id);
-              toast.success(wished ? "Removed from wishlist" : "Added to wishlist");
+              toast.success(
+                wished ? t("product.removedFromWishlist") : t("product.addedToWishlist"),
+              );
             }}
             className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:scale-110 transition-transform"
-            aria-label="Wishlist"
+            aria-label={t("product.wishlist")}
           >
             <Heart
               className={cn("h-4 w-4", wished ? "fill-destructive text-destructive" : "text-navy")}
@@ -135,7 +147,7 @@ export function ProductCard({
             }}
             className="absolute inset-x-3 bottom-3 h-10 rounded-full bg-navy/90 text-navy-foreground backdrop-blur flex items-center justify-center gap-2 text-sm font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 [@media(hover:none)]:opacity-100 [@media(hover:none)]:translate-y-0 transition-all duration-300"
           >
-            <Eye className="h-4 w-4" /> Quick view
+            <Eye className="h-4 w-4" /> {t("product.quickView")}
           </button>
         </div>
       </Link>
@@ -167,10 +179,10 @@ export function ProductCard({
           <button
             onClick={() => {
               add(product.id);
-              toast.success("Added to cart", { description: product.name });
+              toast.success(t("product.addedToCart"), { description: product.name });
             }}
-            className="h-9 w-9 rounded-full bg-emerald text-emerald-foreground hover:bg-gold hover:text-gold-foreground transition-colors flex items-center justify-center"
-            aria-label="Add to cart"
+            className="h-9 w-9 rounded-full bg-gold text-gold-foreground hover:bg-gold-600 hover:text-gold-foreground transition-colors flex items-center justify-center"
+            aria-label={t("cart.add")}
           >
             <ShoppingCart className="h-4 w-4" />
           </button>
@@ -205,9 +217,14 @@ export function ProductCard({
             {(product.badge || discount > 0 || showBoost) && (
               <div className="absolute top-4 left-4 flex flex-col gap-1 items-start">
                 {showBoost && BoostIcon && (
-                  <Badge className={cn("uppercase tracking-wider text-[10px] gap-1", BOOST_COLORS[boostTier])}>
+                  <Badge
+                    className={cn(
+                      "uppercase tracking-wider text-[10px] gap-1",
+                      BOOST_COLORS[boostTier],
+                    )}
+                  >
                     <BoostIcon className="h-3 w-3" />
-                    {BOOST_LABELS[boostTier]}
+                    {BOOST_TIER_LABELS[boostTier]}
                   </Badge>
                 )}
                 {product.badge && (
@@ -232,7 +249,9 @@ export function ProductCard({
             <div className="flex items-center gap-1 text-sm mt-2">
               <StarRating value={product.rating} size={16} />
               <span className="font-medium">{product.rating.toFixed(1)}</span>
-              <span className="text-muted-foreground">({product.reviews} reviews)</span>
+              <span className="text-muted-foreground">
+                ({product.reviews} {t("product.reviews")})
+              </span>
             </div>
             <div className="flex items-end gap-2 mt-3">
               <p className="font-display text-2xl font-semibold">{formatXAF(product.price)}</p>
@@ -252,7 +271,7 @@ export function ProductCard({
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                   className="h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full"
-                  aria-label="Decrease quantity"
+                  aria-label={t("product.decreaseQuantity")}
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
@@ -260,7 +279,7 @@ export function ProductCard({
                 <button
                   onClick={() => setQty((q) => q + 1)}
                   className="h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full"
-                  aria-label="Increase quantity"
+                  aria-label={t("product.increaseQuantity")}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
@@ -268,20 +287,24 @@ export function ProductCard({
               <button
                 onClick={() => {
                   add(product.id, qty);
-                  toast.success("Added to cart", { description: `${qty} × ${product.name}` });
+                  toast.success(t("product.addedToCart"), {
+                    description: `${qty} × ${product.name}`,
+                  });
                   setQuickViewOpen(false);
                 }}
-                className="flex-1 h-10 rounded-full bg-emerald text-emerald-foreground hover:bg-emerald/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                className="flex-1 h-10 rounded-full bg-gold text-gold-foreground hover:bg-gold/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
-                <ShoppingCart className="h-4 w-4" /> Add to cart
+                <ShoppingCart className="h-4 w-4" /> {t("cart.add")}
               </button>
               <button
                 onClick={() => {
                   toggleWish(product.id);
-                  toast.success(wished ? "Removed from wishlist" : "Added to wishlist");
+                  toast.success(
+                    wished ? t("product.removedFromWishlist") : t("product.addedToWishlist"),
+                  );
                 }}
                 className="h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-muted flex-shrink-0"
-                aria-label="Wishlist"
+                aria-label={t("product.wishlist")}
               >
                 <Heart
                   className={cn("h-4 w-4", wished ? "fill-destructive text-destructive" : "")}
@@ -295,7 +318,7 @@ export function ProductCard({
               onClick={() => setQuickViewOpen(false)}
               className="text-sm text-gold hover:underline mt-4 text-center"
             >
-              View full details →
+              {t("product.viewDetails")}
             </Link>
           </div>
         </DialogContent>

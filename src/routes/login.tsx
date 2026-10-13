@@ -1,13 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, MessageSquare, Wallet, ArrowRight } from "lucide-react";
+import {
+  Loader2,
+  ShieldCheck,
+  MessageSquare,
+  Wallet,
+  ArrowRight,
+  Hand,
+  MapPin,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import * as React from "react";
+import { useI18n } from "@/lib/i18n";
 
 type Search = { redirect?: string };
 
@@ -20,12 +29,13 @@ export const Route = createFileRoute("/login")({
 });
 
 const FEATURES = [
-  { icon: ShieldCheck, label: "Escrow-protected payments" },
-  { icon: MessageSquare, label: "Order updates via WhatsApp" },
-  { icon: Wallet, label: "Mobile Money & card checkout" },
+  { icon: ShieldCheck, key: "auth.escrowPayments" },
+  { icon: MessageSquare, key: "auth.whatsappUpdates" },
+  { icon: Wallet, key: "auth.mobileMoneyCheckout" },
 ];
 
 function LoginPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const { signIn } = useAuth();
@@ -42,10 +52,10 @@ function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      toast.success("Welcome back");
+      toast.success(t("auth.welcome"));
       await navigate({ to: destination });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed.");
+      toast.error(err instanceof Error ? err.message : t("auth.signInFailed"));
     } finally {
       setLoading(false);
     }
@@ -72,34 +82,39 @@ function LoginPage() {
           <div>
             <Logo className="[&_span]:text-white [&_.text-gold]:text-gold" />
             <div className="mt-12">
-              <h2 className="font-display text-2xl font-bold leading-snug">Welcome back 👋</h2>
+              <h2 className="font-display text-2xl font-bold leading-snug">
+                {t("auth.welcomeBack")}{" "}
+                <Hand className="inline h-5 w-5 text-gold align-[-0.1em]" />
+              </h2>
               <p className="text-sm text-white/60 mt-2">
-                Sign in to shop, track orders, or manage your seller store.
+                {t("auth.signInIntro")}
               </p>
             </div>
             <ul className="mt-8 space-y-3">
-              {FEATURES.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-2.5 text-sm text-white/80">
+              {FEATURES.map(({ icon: Icon, key }) => (
+                <li key={key} className="flex items-center gap-2.5 text-sm text-white/80">
                   <Icon className="h-4 w-4 text-gold shrink-0" />
-                  {label}
+                  {t(key)}
                 </li>
               ))}
             </ul>
           </div>
-          <p className="text-[11px] text-white/30 mt-12">© 2026 J-Store · Made in Cameroon 🇨🇲</p>
+          <p className="text-[11px] text-white/30 mt-12">
+            © 2026 J-Store · Made in Cameroon <MapPin className="inline h-3 w-3 align-[-0.1em]" />
+          </p>
         </div>
 
         {/* ── Right: form ── */}
         <div className="flex-1 bg-card p-6 sm:p-8 flex max-h-[calc(100dvh-2rem)] flex-col justify-center overflow-y-auto sm:max-h-none">
-          <h1 className="font-display text-2xl font-bold">Sign in</h1>
+          <h1 className="font-display text-2xl font-bold">{t("auth.signIn")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            New here?{" "}
+            {t("auth.newHere")}{" "}
             <Link
               to="/signup"
               search={{ ref: undefined }}
               className="text-gold font-medium hover:underline"
             >
-              Create an account
+              {t("auth.createAnAccount")}
             </Link>
           </p>
 
@@ -119,7 +134,7 @@ function LoginPage() {
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 />
                 <path
-                  fill="#34A853"
+                  fill="#D9A62E"
                   d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                 />
                 <path
@@ -132,12 +147,12 @@ function LoginPage() {
                 />
               </svg>
             )}
-            Continue with Google
+            {t("auth.continueGoogle")}
           </Button>
 
           <div className="flex items-center gap-3 my-5 text-xs text-muted-foreground">
             <div className="flex-1 h-px bg-border" />
-            or with email
+            {t("auth.orEmail")}
             <div className="flex-1 h-px bg-border" />
           </div>
 
@@ -145,7 +160,7 @@ function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1">
               <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-                Email
+                {t("auth.email")}
               </label>
               <Input
                 id="email"
@@ -159,7 +174,7 @@ function LoginPage() {
             </div>
             <div className="space-y-1">
               <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
-                Password
+                {t("auth.password")}
               </label>
               <Input
                 id="password"
@@ -180,7 +195,7 @@ function LoginPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Sign In <ArrowRight className="ml-2 h-4 w-4" />
+                  {t("auth.signIn")} <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>

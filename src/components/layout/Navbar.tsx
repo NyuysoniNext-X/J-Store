@@ -53,19 +53,19 @@ export function Navbar() {
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
       <div className="hidden md:flex bg-navy text-navy-foreground text-xs">
         <div className="mx-auto max-w-[1536px] w-full px-6 h-9 flex items-center justify-between">
-          <span>Free delivery on orders over 50 000 FCFA in Douala · Yaoundé</span>
+          <span>{t("delivery.freeOver")}</span>
           <div className="flex items-center gap-4">
             <Link to="/seller/register" className="hover:text-gold transition-colors">
               {t("nav.sell")}
             </Link>
             <Link to="/delivery/apply" className="hover:text-gold transition-colors">
-              Deliver with us
+              {t("nav.deliver")}
             </Link>
             <Link to="/orders" className="hover:text-gold transition-colors">
-              Track order
+              {t("nav.trackOrder")}
             </Link>
             <Link to="/help" className="hover:text-gold transition-colors">
-              Help
+              {t("nav.help")}
             </Link>
           </div>
         </div>
@@ -75,7 +75,7 @@ export function Navbar() {
         <button
           className="md:hidden p-2 -ml-2"
           onClick={() => setMobileOpen(true)}
-          aria-label="Menu"
+          aria-label={t("nav.menu")}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -87,13 +87,13 @@ export function Navbar() {
             size="icon"
             onClick={() => setLang(lang === "en" ? "fr" : "en")}
             className="hidden sm:inline-flex"
-            aria-label="Language"
+            aria-label={t("nav.language")}
           >
             <Globe className="h-5 w-5" />
-            <span className="sr-only">Language</span>
+            <span className="sr-only">{t("nav.language")}</span>
           </Button>
           <span className="hidden sm:inline text-xs font-semibold uppercase">{lang}</span>
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Theme">
+          <Button variant="ghost" size="icon" onClick={toggle} aria-label={t("nav.theme")}>
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
           <Link to="/wishlist" className="relative p-2 rounded-md hover:bg-muted">
@@ -106,7 +106,7 @@ export function Navbar() {
           </Link>
           <CartSheet
             trigger={
-              <button className="relative p-2 rounded-md hover:bg-muted" aria-label="Cart">
+              <button className="relative p-2 rounded-md hover:bg-muted" aria-label={t("nav.cart")}>
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
                   <Badge className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 bg-gold text-gold-foreground">
@@ -122,7 +122,7 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button
                   className="p-2 rounded-md hover:bg-muted hidden sm:inline-flex"
-                  aria-label="Account"
+                  aria-label={t("nav.account")}
                 >
                   <UserCircle className="h-5 w-5" />
                 </button>
@@ -132,29 +132,29 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/profile">
-                    <User className="h-4 w-4 mr-2" /> My profile
+                    <User className="h-4 w-4 mr-2" /> {t("nav.myProfile")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/orders">
-                    <ShoppingCart className="h-4 w-4 mr-2" /> Track order
+                    <ShoppingCart className="h-4 w-4 mr-2" /> {t("nav.trackOrder")}
                   </Link>
                 </DropdownMenuItem>
                 {roles.includes("seller") && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link to="/seller/dashboard">
-                        <Store className="h-4 w-4 mr-2" /> Seller dashboard
+                        <Store className="h-4 w-4 mr-2" /> {t("nav.sellerDashboard")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/seller/products">
-                        <Package className="h-4 w-4 mr-2" /> My products
+                        <Package className="h-4 w-4 mr-2" /> {t("nav.myProducts")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/seller/wallet">
-                        <ShoppingCart className="h-4 w-4 mr-2" /> My wallet
+                        <ShoppingCart className="h-4 w-4 mr-2" /> {t("nav.myWallet")}
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -162,7 +162,7 @@ export function Navbar() {
                 {roles.includes("delivery") && (
                   <DropdownMenuItem asChild>
                     <Link to="/delivery/dashboard">
-                      <Truck className="h-4 w-4 mr-2" /> Delivery dashboard
+                      <Truck className="h-4 w-4 mr-2" /> {t("nav.deliveryDashboard")}
                     </Link>
                   </DropdownMenuItem>
                 )}
@@ -170,27 +170,27 @@ export function Navbar() {
                   <>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/dashboard">
-                        <Shield className="h-4 w-4 mr-2" /> Admin dashboard
+                        <Shield className="h-4 w-4 mr-2" /> {t("nav.adminDashboard")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/seller-applications">
-                        <Store className="h-4 w-4 mr-2" /> Seller applications
+                        <Store className="h-4 w-4 mr-2" /> {t("nav.sellerApplications")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/products">
-                        <Package className="h-4 w-4 mr-2" /> Product approvals
+                        <Package className="h-4 w-4 mr-2" /> {t("nav.productApprovals")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/payments">
-                        <Package className="h-4 w-4 mr-2" /> Payment verifications
+                        <Package className="h-4 w-4 mr-2" /> {t("nav.paymentVerifications")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/withdrawals">
-                        <Package className="h-4 w-4 mr-2" /> Withdrawals
+                        <Package className="h-4 w-4 mr-2" /> {t("nav.withdrawals")}
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -199,19 +199,19 @@ export function Navbar() {
                   <>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/seller-boosts">
-                        <Package className="h-4 w-4 mr-2" /> Seller boosts
+                        <Package className="h-4 w-4 mr-2" /> {t("nav.sellerBoosts")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/super-admin/dashboard">
-                        <Crown className="h-4 w-4 mr-2" /> Super admin
+                        <Crown className="h-4 w-4 mr-2" /> {t("nav.superAdmin")}
                       </Link>
                     </DropdownMenuItem>
                   </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void signOut()}>
-                  <LogOut className="h-4 w-4 mr-2" /> Sign out
+                  <LogOut className="h-4 w-4 mr-2" /> {t("nav.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -227,7 +227,7 @@ export function Navbar() {
         <nav className="hidden md:block border-t border-border">
           <div className="w-full px-6 h-11 flex items-center justify-between gap-4 text-sm overflow-x-auto whitespace-nowrap"> 
             <Link to="/shop" className="font-medium hover:text-gold transition-colors">
-              All
+              {t("common.all")}
             </Link>
             {categories.map((c) => (
               <Link
@@ -250,7 +250,7 @@ export function Navbar() {
           <div className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <Logo />
-              <button onClick={() => setMobileOpen(false)} aria-label="Close">
+              <button onClick={() => setMobileOpen(false)} aria-label={t("nav.close")}>
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -261,7 +261,7 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="block py-2 font-medium"
               >
-                Shop all
+                {t("nav.shopAll")}
               </Link>
               {categories.map((c) => (
                 <Link
@@ -283,14 +283,14 @@ export function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-2 py-2 font-medium"
                   >
-                    <UserCircle className="h-4 w-4" /> {user?.email ?? "My account"}
+                    <UserCircle className="h-4 w-4" /> {user?.email ?? t("nav.myAccount")}
                   </Link>
                   <Link
                     to="/orders"
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                   >
-                    <ShoppingCart className="h-4 w-4" /> My orders
+                    <ShoppingCart className="h-4 w-4" /> {t("nav.myOrders")}
                   </Link>
                   {roles.includes("seller") && (
                     <>
@@ -299,14 +299,14 @@ export function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Store className="h-4 w-4" /> Seller dashboard
+                        <Store className="h-4 w-4" /> {t("nav.sellerDashboard")}
                       </Link>
                       <Link
                         to="/seller/wallet"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <ShoppingCart className="h-4 w-4" /> My wallet
+                        <ShoppingCart className="h-4 w-4" /> {t("nav.myWallet")}
                       </Link>
                     </>
                   )}
@@ -316,7 +316,7 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                     >
-                      <Truck className="h-4 w-4" /> Delivery dashboard
+                      <Truck className="h-4 w-4" /> {t("nav.deliveryDashboard")}
                     </Link>
                   )}
                   {(roles.includes("admin") || roles.includes("super_admin")) && (
@@ -326,35 +326,35 @@ export function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Shield className="h-4 w-4" /> Admin
+                        <Shield className="h-4 w-4" /> {t("nav.admin")}
                       </Link>
                       <Link
                         to="/admin/seller-applications"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Store className="h-4 w-4" /> Seller apps
+                        <Store className="h-4 w-4" /> {t("nav.sellerApps")}
                       </Link>
                       <Link
                         to="/admin/products"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Package className="h-4 w-4" /> Product approvals
+                        <Package className="h-4 w-4" /> {t("nav.productApprovals")}
                       </Link>
                       <Link
                         to="/admin/payments"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Package className="h-4 w-4" /> Payments
+                        <Package className="h-4 w-4" /> {t("nav.payments")}
                       </Link>
                       <Link
                         to="/admin/withdrawals"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                       >
-                        <Package className="h-4 w-4" /> Withdrawals
+                        <Package className="h-4 w-4" /> {t("nav.withdrawals")}
                       </Link>
                     </>
                   )}
@@ -364,7 +364,7 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                     >
-                      <Package className="h-4 w-4" /> Seller boosts
+                      <Package className="h-4 w-4" /> {t("nav.sellerBoosts")}
                     </Link>
                   )}
                   <button
@@ -374,7 +374,7 @@ export function Navbar() {
                     }}
                     className="flex items-center gap-2 py-2 w-full text-left text-muted-foreground hover:text-foreground"
                   >
-                    <LogOut className="h-4 w-4" /> Sign out
+                    <LogOut className="h-4 w-4" /> {t("nav.signOut")}
                   </button>
                 </>
               ) : (
@@ -383,7 +383,7 @@ export function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 py-2 font-medium"
                 >
-                  <User className="h-4 w-4" /> Sign in
+                  <User className="h-4 w-4" /> {t("nav.signIn")}
                 </Link>
               )}
               <div className="pt-2 border-t border-border mt-2 space-y-1">
@@ -399,28 +399,28 @@ export function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  <Truck className="h-4 w-4" /> Deliver with us
+                  <Truck className="h-4 w-4" /> {t("nav.deliver")}
                 </Link>
                 <Link
                   to="/delivery/company"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  <Building2 className="h-4 w-4" /> Delivery company
+                  <Building2 className="h-4 w-4" /> {t("nav.deliveryCompany")}
                 </Link>
                 <Link
                   to="/orders"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  <Package className="h-4 w-4" /> Track order
+                  <Package className="h-4 w-4" /> {t("nav.trackOrder")}
                 </Link>
                 <Link
                   to="/help"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  Help
+                  {t("nav.help")}
                 </Link>
               </div>
               <div className="pt-2 border-t border-border mt-2 flex items-center gap-3">
@@ -435,7 +435,7 @@ export function Navbar() {
                   className="flex items-center gap-1.5 py-2 text-muted-foreground hover:text-foreground text-sm"
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  {theme === "dark" ? "Light mode" : "Dark mode"}
+                  {theme === "dark" ? t("nav.lightMode") : t("nav.darkMode")}
                 </button>
               </div>
             </div>

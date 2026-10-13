@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -78,12 +79,13 @@ function generateSlug(title: string): string {
 }
 
 function SellerProducts() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [form, setForm] = useState<typeof EMPTY>(EMPTY);
-  
+
   // Image upload states
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -112,9 +114,9 @@ function SellerProducts() {
         .select("id")
         .eq("owner_id", user.id)
         .single();
-      
+
       if (!store) return [];
-      
+
       const { data, error } = await supabase
         .from("products")
         .select("*, product_images ( url, position ), product_variants ( id, stock_quantity )")
@@ -135,7 +137,7 @@ function SellerProducts() {
         .select("id, store_name")
         .eq("owner_id", user!.id)
         .single();
-      
+
       if (error) {
         if (error.code === "PGRST116") return null;
         throw error;
@@ -152,12 +154,12 @@ function SellerProducts() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error(t("roles.please_select_an_image_file"));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5MB");
+      toast.error(t("roles.image_must_be_less_than_5mb"));
       return;
     }
 
@@ -188,7 +190,7 @@ function SellerProducts() {
       return data.publicUrl;
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload image");
+      toast.error(t("roles.failed_to_upload_image"));
       return null;
     } finally {
       setUploading(false);
@@ -198,13 +200,13 @@ function SellerProducts() {
   const upsert = useMutation({
     mutationFn: async () => {
       if (!sellerStore?.id) {
-        throw new Error("You must create a store before adding products");
+        throw new Error(t("roles.you_must_create_a_store_before_adding_products"));
       }
 
-      if (!form.title.trim()) throw new Error("Enter a product title");
-      if (!(form.base_price > 0)) throw new Error("Enter a price greater than 0");
+      if (!form.title.trim()) throw new Error(t("roles.enter_a_product_title"));
+      if (!(form.base_price > 0)) throw new Error(t("roles.enter_a_price_greater_than_0"));
       if (!Number.isInteger(form.stock) || form.stock < 0) {
-        throw new Error("Stock must be a whole number (0 or more)");
+        throw new Error(t("roles.stock_must_be_a_whole_number_0_or_more"));
       }
 
       const uploadedUrl = await uploadImage();
@@ -245,18 +247,20 @@ function SellerProducts() {
         p_image_url: uploadedUrl ?? undefined,
         p_stock: form.stock,
       });
-      if (mediaErr) throw new Error(`Saved, but image/stock failed: ${mediaErr.message}`);
+      if (mediaErr)
+        throw new Error(t("roles.saved_but_image_stock_failed", { error: mediaErr.message }));
 
       // New products go straight into the review queue so they can go live.
       if (!editing) {
         const { error: subErr } = await supabase.rpc("submit_product_for_review", {
           p_product_id: productId,
         });
-        if (subErr) throw new Error(`Saved as draft, but submit failed: ${subErr.message}`);
+        if (subErr)
+          throw new Error(t("roles.saved_as_draft_submit_failed", { error: subErr.message }));
       }
     },
     onSuccess: () => {
-      toast.success(editing ? "Product updated" : "Product submitted for review");
+      toast.success(editing ? t("roles.product_updated") : t("roles.product_submitted_for_review"));
       qc.invalidateQueries({ queryKey: ["seller-products", user?.id] });
       setOpen(false);
       setEditing(null);
@@ -276,7 +280,7 @@ function SellerProducts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Submitted for review");
+      toast.success(t("roles.submitted_for_review"));
       qc.invalidateQueries({ queryKey: ["seller-products", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -288,7 +292,7 @@ function SellerProducts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Product deleted");
+      toast.success(t("roles.product_deleted"));
       qc.invalidateQueries({ queryKey: ["seller-products", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -301,7 +305,7 @@ function SellerProducts() {
     setPreviewUrl(null);
     setOpen(true);
   };
-  
+
   const openEdit = (p: ProductRow) => {
     const currentImage = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position)[0];
     setEditing(p);
@@ -321,8 +325,10 @@ function SellerProducts() {
     <div className="mx-auto max-w-[1536px] px-6 py-10">
       <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">Seller</p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold">My products</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">
+            {t("roles.seller")}
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl font-bold">{t("roles.my_products")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Add, edit, or manage your products. Products start as drafts.
           </p>
@@ -350,28 +356,28 @@ function SellerProducts() {
               className="space-y-4"
             >
               <div>
-                <Label>Product Name</Label>
+                <Label>{t("roles.product_name")}</Label>
                 <Input
                   required
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Enter product name"
+                  placeholder={t("roles.enter_product_name")}
                 />
               </div>
-              
+
               <div>
-                <Label>Description</Label>
+                <Label>{t("roles.description")}</Label>
                 <Textarea
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Describe your product"
+                  placeholder={t("roles.describe_your_product")}
                 />
               </div>
-              
+
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <Label>Price (FCFA)</Label>
+                  <Label>{t("roles.price_fcfa")}</Label>
                   <Input
                     required
                     type="number"
@@ -381,13 +387,13 @@ function SellerProducts() {
                   />
                 </div>
                 <div>
-                  <Label>Category</Label>
+                  <Label>{t("roles.category")}</Label>
                   <Select
                     value={form.category_id}
                     onValueChange={(value) => setForm({ ...form, category_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={t("roles.select_category")} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
@@ -401,7 +407,7 @@ function SellerProducts() {
               </div>
 
               <div>
-                <Label>Stock quantity</Label>
+                <Label>{t("roles.stock_quantity")}</Label>
                 <Input
                   required
                   type="number"
@@ -413,7 +419,7 @@ function SellerProducts() {
               </div>
 
               <div>
-                <Label>Product Image</Label>
+                <Label>{t("roles.product_image")}</Label>
                 <Input
                   type="file"
                   accept="image/*"
@@ -421,27 +427,29 @@ function SellerProducts() {
                   className="cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  PNG, JPG, WEBP up to 5MB
+                  {t("roles.png_jpg_webp_up_to_5mb")}
                 </p>
                 {previewUrl && (
                   <div className="mt-3">
                     <img
                       src={previewUrl}
-                      alt="Preview"
+                      alt={t("roles.image_preview")}
                       className="h-32 w-32 rounded-lg object-cover border border-border"
                     />
                   </div>
                 )}
               </div>
-              
+
               <DialogFooter>
                 <Button
                   type="submit"
                   disabled={upsert.isPending || uploading}
                   className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                 >
-                  {(upsert.isPending || uploading) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {uploading ? "Uploading..." : "Save"}
+                  {(upsert.isPending || uploading) && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  {uploading ? t("roles.uploading") : t("roles.save")}
                 </Button>
               </DialogFooter>
             </form>
@@ -456,17 +464,17 @@ function SellerProducts() {
       ) : !sellerStore ? (
         <div className="text-center py-20 bg-card border border-border rounded-3xl">
           <Package className="h-12 w-12 text-amber-500 mx-auto mb-3" />
-          <p className="font-display text-lg font-semibold">Create your store first</p>
+          <p className="font-display text-lg font-semibold">{t("roles.create_your_store_first")}</p>
           <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-            Before you can add products, you need to set up your seller store with business details.
+            {t("roles.before_you_can_add_products_set_up_store")}
           </p>
         </div>
       ) : products.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-3xl">
           <Package className="h-12 w-12 text-gold mx-auto mb-3" />
-          <p className="font-display text-lg font-semibold">No products yet</p>
+          <p className="font-display text-lg font-semibold">{t("roles.no_products_yet")}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Click "Add product" to list your first item.
+            {t("roles.click_add_product_to_list_first_item")}
           </p>
         </div>
       ) : (
@@ -475,11 +483,13 @@ function SellerProducts() {
             <table className="w-full text-sm min-w-[480px]">
               <thead className="text-xs text-muted-foreground border-b border-border">
                 <tr>
-                  <th className="text-left font-medium py-3 px-4">Product</th>
-                  <th className="text-left font-medium py-3 hidden md:table-cell">Image</th>
-                  <th className="text-right font-medium py-3">Price</th>
-                  <th className="text-center font-medium py-3">Status</th>
-                  <th className="text-right font-medium py-3 px-4">Actions</th>
+                  <th className="text-left font-medium py-3 px-4">{t("roles.product")}</th>
+                  <th className="text-left font-medium py-3 hidden md:table-cell">
+                    {t("roles.image")}
+                  </th>
+                  <th className="text-right font-medium py-3">{t("roles.price")}</th>
+                  <th className="text-center font-medium py-3">{t("roles.status")}</th>
+                  <th className="text-right font-medium py-3 px-4">{t("roles.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -508,7 +518,19 @@ function SellerProducts() {
                         className="text-xs px-2 py-1 rounded-full bg-secondary"
                         title={p.rejection_reason ?? undefined}
                       >
-                        {STATUS_LABEL[p.status] ?? p.status}
+                        {p.status === "pending_approval"
+                          ? t("roles.pending_review")
+                          : p.status === "approved"
+                            ? t("roles.live")
+                            : p.status === "draft"
+                              ? t("roles.draft")
+                              : p.status === "rejected"
+                                ? t("roles.rejected")
+                                : p.status === "flagged"
+                                  ? t("roles.flagged")
+                                  : p.status === "archived"
+                                    ? t("roles.archived")
+                                    : p.status}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -520,7 +542,7 @@ function SellerProducts() {
                           disabled={submitForReview.isPending}
                           onClick={() => submitForReview.mutate(p.id)}
                         >
-                          Submit for review
+                          {t("roles.submit_for_review")}
                         </Button>
                       )}
                       <Button size="icon" variant="ghost" onClick={() => openEdit(p)}>
@@ -530,7 +552,8 @@ function SellerProducts() {
                         size="icon"
                         variant="ghost"
                         onClick={() => {
-                          if (confirm(`Delete "${p.title}"?`)) del.mutate(p.id);
+                          if (confirm(t("roles.delete_product_simple", { product: p.title })))
+                            del.mutate(p.id);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

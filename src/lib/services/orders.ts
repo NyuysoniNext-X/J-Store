@@ -24,14 +24,14 @@ export const ordersService = {
   async list(buyerId: string) {
     const { data, error } = await supabase
       .from("orders")
-      .select("*, order_items(*)")
-      .eq("buyer_id", buyerId)
+      .select("*, order_items(*), order_groups!inner(buyer_id)")
+      .eq("order_groups.buyer_id", buyerId)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data as (Order & { order_items: OrderItem[] })[];
   },
 
-  async updateStatus(orderId: string, status: any) {
+  async updateStatus(orderId: string, status: Order["status"]) {
     const { error } = await supabase
       .from("orders")
       .update({ status, updated_at: new Date().toISOString() })

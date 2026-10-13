@@ -14,8 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/store";
 import { useProducts } from "@/lib/queries";
 import { formatXAF, type Product } from "@/lib/mock-data";
+import { useI18n } from "@/lib/i18n";
 
 export function CartSheet({ trigger }: { trigger: ReactNode }) {
+  const { t } = useI18n();
   const rawItems = useCart((s) => s.items);
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
@@ -44,7 +46,7 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle className="font-display text-xl flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" /> Your cart
+            <ShoppingCart className="h-5 w-5" /> {t("cart.title")}
             {items.length > 0 && (
               <Badge className="bg-gold text-gold-foreground ml-1">{items.length}</Badge>
             )}
@@ -54,14 +56,14 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
         {items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <ShoppingBag className="h-14 w-14 text-gold mb-3" />
-            <p className="font-display text-lg font-semibold">Your cart is empty</p>
-            <p className="text-sm text-muted-foreground mt-1">Add products to get started.</p>
+            <p className="font-display text-lg font-semibold">{t("cart.empty")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("cart.discover")}</p>
             <SheetClose asChild>
               <Button
                 asChild
                 className="mt-6 rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
               >
-                <Link to="/shop">Browse shop</Link>
+                <Link to="/shop">{t("cart.startShopping")}</Link>
               </Button>
             </SheetClose>
           </div>
@@ -97,7 +99,7 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
                         <button
                           onClick={() => setQty(product.id, qty - 1)}
                           className="h-7 w-7 flex items-center justify-center"
-                          aria-label="Decrease"
+                          aria-label={t("cart.decrease")}
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -105,7 +107,7 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
                         <button
                           onClick={() => setQty(product.id, qty + 1)}
                           className="h-7 w-7 flex items-center justify-center"
-                          aria-label="Increase"
+                          aria-label={t("cart.increase")}
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -118,7 +120,7 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
                   <button
                     onClick={() => remove(product.id)}
                     className="text-muted-foreground hover:text-destructive self-start"
-                    aria-label="Remove"
+                    aria-label={t("cart.remove")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -129,28 +131,28 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
             <div className="border-t border-border px-6 py-5 space-y-3 bg-card">
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("cart.subtotal")}</span>
                   <span>{formatXAF(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="text-muted-foreground">{t("cart.shipping")}</span>
                   <span>
                     {shipping === 0 ? (
-                      <span className="text-gold font-medium">Free</span>
+                      <span className="text-gold font-medium">{t("cart.free")}</span>
                     ) : (
                       formatXAF(shipping)
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between font-display text-base font-bold pt-2 border-t border-border">
-                  <span>Total</span>
+                  <span>{t("cart.total")}</span>
                   <span>{formatXAF(total)}</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <SheetClose asChild>
                   <Button asChild variant="outline" className="rounded-full">
-                    <Link to="/cart">View cart</Link>
+                    <Link to="/cart">{t("cart.viewCart")}</Link>
                   </Button>
                 </SheetClose>
                 <SheetClose asChild>
@@ -158,7 +160,7 @@ export function CartSheet({ trigger }: { trigger: ReactNode }) {
                     asChild
                     className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
                   >
-                    <Link to="/checkout">Checkout</Link>
+                    <Link to="/checkout">{t("cart.checkout")}</Link>
                   </Button>
                 </SheetClose>
               </div>

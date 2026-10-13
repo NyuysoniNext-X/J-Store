@@ -39,7 +39,7 @@ const PUBLIC_SELECT = `
   product_variants ( price_override, stock_quantity )
 `;
 
-const FALLBACK_HUES = [25, 45, 200, 220, 260, 320, 10, 160, 80, 340];
+const FALLBACK_HUES = [25, 45, 200, 220, 260, 320, 10, 45, 45, 340];
 
 function mapToStorefront(row: ProductJoinRow, index = 0): StorefrontProduct {
   const images = [...(row.product_images ?? [])].sort((a, b) => a.position - b.position);

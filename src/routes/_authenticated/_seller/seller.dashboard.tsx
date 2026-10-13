@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -13,40 +14,53 @@ export const Route = createFileRoute("/_authenticated/_seller/seller/dashboard")
 });
 
 function SellerDashboard() {
+  const { t, lang } = useI18n();
   const { user } = useAuth();
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["seller-products", user?.id],
+  const { data: store } = useQuery({
+    queryKey: ["seller-store", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").eq("seller_id", user!.id);
+      const { data, error } = await supabase
+        .from("seller_stores")
+        .select("id")
+        .eq("owner_id", user!.id)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
+  const storeId = store?.id;
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["seller-products", user?.id],
+    queryFn: async () => {
+      if (!storeId) return [];
+      const { data, error } = await supabase.from("products").select("*").eq("store_id", storeId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId,
+  });
 
   const { data: items = [] } = useQuery({
     queryKey: ["seller-order-items", user?.id],
     queryFn: async () => {
+      if (!storeId) return [];
       const { data, error } = await supabase
         .from("order_items")
-        .select("*, orders(created_at, status)")
-        .eq("seller_id", user!.id)
+        .select(
+          "id, product_title_snapshot, unit_price, quantity, line_total, created_at, orders!inner(store_id)",
+        )
+        .eq("orders.store_id", storeId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Array<{
-        id: string;
-        name: string;
-        unit_price: number;
-        qty: number;
-        created_at: string;
-        orders: { created_at: string; status: string } | null;
-      }>;
+      return data;
     },
-    enabled: !!user,
+    enabled: !!storeId,
   });
 
-  const revenue = useMemo(() => items.reduce((s, i) => s + i.unit_price * i.qty, 0), [items]);
+  const revenue = useMemo(() => items.reduce((s, i) => s + i.line_total, 0), [items]);
   const last7 = useMemo(() => {
     const days: { day: string; total: number }[] = [];
     const now = new Date();
@@ -54,25 +68,29 @@ function SellerDashboard() {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      const dayLabel = d.toLocaleDateString("en", { weekday: "short" });
+      const dayLabel = d.toLocaleDateString(lang === "fr" ? "fr-FR" : "en", { weekday: "short" });
       const total = items
         .filter((it) => (it.created_at || "").slice(0, 10) === key)
-        .reduce((s, it) => s + it.unit_price * it.qty, 0);
+        .reduce((s, it) => s + it.line_total, 0);
       days.push({ day: dayLabel, total });
     }
     return days;
-  }, [items]);
+  }, [items, lang]);
   const maxBar = Math.max(1, ...last7.map((d) => d.total));
 
   const stats = [
-    { label: "Revenue (all-time)", value: formatXAF(revenue), icon: Wallet },
-    { label: "Items sold", value: items.reduce((s, i) => s + i.qty, 0).toString(), icon: Package },
+    { label: t("roles.revenue_all_time"), value: formatXAF(revenue), icon: Wallet },
     {
-      label: "Active products",
-      value: products.filter((p) => p.active).length.toString(),
+      label: t("roles.items_sold"),
+      value: items.reduce((s, i) => s + i.quantity, 0).toString(),
+      icon: Package,
+    },
+    {
+      label: t("roles.active_products"),
+      value: products.filter((p) => p.status === "approved").length.toString(),
       icon: ListChecks,
     },
-    { label: "Total products", value: products.length.toString(), icon: TrendingUp },
+    { label: t("roles.total_products"), value: products.length.toString(), icon: TrendingUp },
   ];
 
   return (
@@ -80,9 +98,9 @@ function SellerDashboard() {
       <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-1">
-            Seller dashboard
+            {t("roles.seller_dashboard")}
           </p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold">Welcome back</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold">{t("roles.welcome_back")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
         </div>
         <Button
@@ -90,7 +108,7 @@ function SellerDashboard() {
           className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
         >
           <Link to="/seller/products">
-            <Plus className="h-4 w-4 mr-1.5" /> Manage products
+            <Plus className="h-4 w-4 mr-1.5" /> {t("roles.manage_products")}
           </Link>
         </Button>
       </div>
@@ -111,7 +129,7 @@ function SellerDashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Chart */}
         <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
-          <h2 className="font-display font-semibold mb-4">Sales · last 7 days</h2>
+          <h2 className="font-display font-semibold mb-4">{t("roles.sales_last_7_days")}</h2>
           <div className="flex items-end gap-3 h-44">
             {last7.map((d) => (
               <div key={d.day} className="flex-1 flex flex-col items-center justify-end gap-1.5">
@@ -128,18 +146,19 @@ function SellerDashboard() {
 
         {/* Recent sold items */}
         <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="font-display font-semibold mb-4">Recent sales</h2>
+          <h2 className="font-display font-semibold mb-4">{t("roles.recent_sales")}</h2>
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sales yet.</p>
+            <p className="text-sm text-muted-foreground">{t("roles.no_sales_yet")}</p>
           ) : (
             <ul className="text-sm space-y-3">
               {items.slice(0, 6).map((it) => (
                 <li key={it.id} className="flex items-center justify-between gap-3">
                   <span className="truncate flex-1">
-                    {it.name} <span className="text-muted-foreground">×{it.qty}</span>
+                    {it.product_title_snapshot}{" "}
+                    <span className="text-muted-foreground">×{it.quantity}</span>
                   </span>
                   <span className="font-semibold whitespace-nowrap">
-                    {formatXAF(it.unit_price * it.qty)}
+                    {formatXAF(it.line_total)}
                   </span>
                 </li>
               ))}

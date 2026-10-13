@@ -50,15 +50,15 @@ export const Route = createFileRoute("/")({
 
 // Horizontal scrollable categories — icons replace emojis
 const SCROLL_CATEGORIES = [
-  { slug: "fashion", name: "Fashion", icon: Shirt },
-  { slug: "electronics", name: "Electronics", icon: Smartphone },
-  { slug: "school", name: "School", icon: GraduationCap },
-  { slug: "home", name: "Home & Living", icon: HomeIcon },
-  { slug: "beauty", name: "Beauty", icon: Sparkles },
-  { slug: "sports", name: "Sports", icon: ShoppingBag },
-  { slug: "accessories", name: "Accessories", icon: Gift },
-  { slug: "electronics", name: "Phones & Tablets", icon: Laptop },
-  { slug: "home", name: "Food & Kitchen", icon: Utensils },
+  { slug: "fashion", key: "category.fashion", icon: Shirt },
+  { slug: "electronics", key: "category.electronics", icon: Smartphone },
+  { slug: "school", key: "category.school", icon: GraduationCap },
+  { slug: "home", key: "category.home", icon: HomeIcon },
+  { slug: "beauty", key: "category.beauty", icon: Sparkles },
+  { slug: "sports", key: "category.sports", icon: ShoppingBag },
+  { slug: "accessories", key: "category.accessories", icon: Gift },
+  { slug: "electronics", key: "category.phones", icon: Laptop },
+  { slug: "home", key: "category.food", icon: Utensils },
 ] as const;
 
 function Home() {
@@ -93,14 +93,14 @@ function Home() {
               <Sparkles className="h-3.5 w-3.5" /> {t("hero.eyebrow")}
             </span>
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
-              Your next <span className="text-gradient-gold">trusted</span> purchase, delivered.
+              {t("hero.title")}
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl">{t("hero.sub")}</p>
             <div className="flex flex-wrap gap-3">
               <Button
                 asChild
                 size="lg"
-                className="rounded-full bg-emerald text-emerald-foreground hover:bg-gold hover:text-gold-foreground h-12 px-7"
+                className="rounded-full bg-gold text-gold-foreground hover:bg-gold-600 hover:text-gold-foreground h-12 px-7"
               >
                 <Link to="/shop">
                   {t("hero.cta")} <ArrowRight className="ml-2 h-4 w-4" />
@@ -117,13 +117,13 @@ function Home() {
             </div>
             <div className="flex flex-wrap gap-6 pt-4 text-sm">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-gold" /> Verified sellers
+                <ShieldCheck className="h-5 w-5 text-gold" /> {t("home.verifiedSellers")}
               </div>
               <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-gold" /> Same-day in Douala
+                <Truck className="h-5 w-5 text-gold" /> {t("home.sameDay")}
               </div>
               <div className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-gold fill-gold" /> 4.9 customer rating
+                <Star className="h-5 w-5 text-gold fill-gold" /> {t("home.customerRating")}
               </div>
             </div>
           </motion.div>
@@ -136,7 +136,7 @@ function Home() {
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-elegant">
               <img
                 src={heroImg}
-                alt="Premium shopping experience"
+                alt={t("home.shoppingAlt")}
                 className="w-full h-full object-cover"
                 width={1536}
                 height={1024}
@@ -150,11 +150,11 @@ function Home() {
               className="absolute left-2 sm:-left-4 bottom-10 bg-card rounded-2xl shadow-elegant p-4 flex items-center gap-3 max-w-[200px] sm:max-w-[230px]"
             >
               <div className="h-10 w-10 rounded-full bg-gradient-gold flex items-center justify-center text-gold-foreground font-bold">
-                ★
+                <Star className="h-5 w-5 fill-current" />
               </div>
               <div>
-                <p className="text-sm font-semibold">12 400+ orders</p>
-                <p className="text-xs text-muted-foreground">delivered this month</p>
+                <p className="text-sm font-semibold">{t("home.orderCount")}</p>
+                <p className="text-xs text-muted-foreground">{t("home.deliveredThisMonth")}</p>
               </div>
             </motion.div>
             <motion.div
@@ -163,7 +163,7 @@ function Home() {
               transition={{ delay: 0.6 }}
               className="absolute right-2 sm:-right-4 top-10 bg-navy text-navy-foreground rounded-2xl shadow-gold p-4 max-w-[200px] sm:max-w-[220px]"
             >
-              <p className="text-xs uppercase tracking-wider text-gold">Pay your way</p>
+              <p className="text-xs uppercase tracking-wider text-gold">{t("home.payYourWay")}</p>
               <p className="text-sm font-semibold mt-1">MoMo · Orange · Visa</p>
             </motion.div>
           </motion.div>
@@ -173,12 +173,12 @@ function Home() {
       {/* ── Categories: horizontal scrollable row ── */}
       <section className="mx-auto max-w-[1536px] px-6 py-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl md:text-2xl font-bold">Shop by Category</h2>
+          <h2 className="font-display text-xl md:text-2xl font-bold">{t("home.shopByCategory")}</h2>
           <Link
             to="/shop"
             className="text-sm text-gold hover:underline flex items-center gap-1 shrink-0"
           >
-            View all <ArrowRight className="h-4 w-4" />
+            {t("home.viewAll")} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         {/* scrollbar hidden via inline style; Tailwind v4 doesn't expose scrollbar-width as utility */}
@@ -200,7 +200,7 @@ function Home() {
                     <Icon className="h-5 w-5 md:h-6 md:w-6 text-gold" strokeWidth={1.5} />
                   </div>
                   <span className="text-[11px] md:text-xs font-medium text-center leading-tight">
-                    {cat.name}
+                    {t(cat.key)}
                   </span>
                 </div>
               </Link>
@@ -212,20 +212,20 @@ function Home() {
       {featured.length > 0 && (
         <ProductSection
           title={t("section.featured")}
-          subtitle="Hand-picked premium goods"
+          subtitle={t("home.featuredSubtitle")}
           products={featured}
         />
       )}
 
       <ProductSection
         title={t("section.new")}
-        subtitle="Fresh drops from our sellers"
+        subtitle={t("home.newSubtitle")}
         products={newArrivals}
       />
       {bestSellers.length >= 4 && (
         <ProductSection
           title={t("section.best")}
-          subtitle="Tried, loved and recommended"
+          subtitle={t("home.bestSubtitle")}
           products={bestSellers}
         />
       )}
@@ -235,26 +235,26 @@ function Home() {
         <div className="mx-auto max-w-[1536px] px-6 py-16">
           <div className="text-center mb-10">
             <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold mb-2">
-              Loved across Cameroon
+              {t("home.lovedAcrossCameroon")}
             </p>
-            <h2 className="font-display text-4xl font-bold">A community of trusted shoppers</h2>
+            <h2 className="font-display text-4xl font-bold">{t("home.trustedCommunity")}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 name: "Aïcha M.",
                 city: "Douala",
-                text: "Fastest delivery in the city. My order arrived in 4 hours and the packaging felt luxurious.",
+                key: "home.testimonialFast",
               },
               {
                 name: "Yannick K.",
                 city: "Yaoundé",
-                text: "I pay with MoMo and never worry. J-STORE has become my go-to for everything.",
+                key: "home.testimonialMomo",
               },
               {
                 name: "Linda T.",
                 city: "Bafoussam",
-                text: "As a seller, the dashboard is beautiful and the support team actually picks up.",
+                key: "home.testimonialSeller",
               },
             ].map((r, i) => (
               <motion.div
@@ -270,7 +270,7 @@ function Home() {
                     <Star key={j} className="h-4 w-4 fill-gold text-gold" />
                   ))}
                 </div>
-                <p className="text-sm leading-relaxed mb-4">"{r.text}"</p>
+                <p className="text-sm leading-relaxed mb-4">"{t(r.key)}"</p>
                 <p className="text-sm font-semibold">
                   {r.name} <span className="font-normal text-muted-foreground">· {r.city}</span>
                 </p>
@@ -283,9 +283,9 @@ function Home() {
       {/* Newsletter */}
       <section className="mx-auto max-w-4xl px-6 py-16">
         <div className="rounded-3xl border border-border bg-card p-10 text-center">
-          <h3 className="font-display text-3xl font-bold">Get 10% off your first order</h3>
+          <h3 className="font-display text-3xl font-bold">{t("home.discountTitle")}</h3>
           <p className="text-muted-foreground mt-2">
-            Subscribe for early access to new drops and marketplace updates.
+            {t("home.newsletterIntro")}
           </p>
           <form
             onSubmit={(e) => e.preventDefault()}
@@ -301,7 +301,7 @@ function Home() {
               type="submit"
               className="rounded-full h-12 px-7 bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
             >
-              Subscribe
+              {t("home.subscribe")}
             </Button>
           </form>
         </div>
@@ -321,6 +321,7 @@ function ProductSection({
   products: Product[];
   tint?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <section className={tint ? "bg-secondary/40 border-y border-border" : undefined}>
       <div className="mx-auto max-w-[1536px] px-6 py-10">
@@ -333,7 +334,7 @@ function ProductSection({
             to="/shop"
             className="text-sm font-medium text-gold hover:underline hidden md:inline-flex items-center gap-1"
           >
-            View all <ArrowRight className="h-4 w-4" />
+            {t("home.viewAll")} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -345,7 +346,7 @@ function ProductSection({
           to="/shop"
           className="text-sm font-medium text-gold hover:underline mt-5 inline-flex md:hidden items-center gap-1"
         >
-          View all <ArrowRight className="h-4 w-4" />
+          {t("home.viewAll")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

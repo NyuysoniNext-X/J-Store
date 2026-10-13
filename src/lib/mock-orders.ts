@@ -70,7 +70,7 @@ export const STATUS_META: Record<OrderStatus, { label: string; tone: string }> =
   shipping: { label: "Out for delivery", tone: "bg-gold/15 text-gold border border-gold/30" },
   delivered: {
     label: "Delivered",
-    tone: "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30",
+    tone: "bg-gold-500/15 text-gold-700 border border-gold-500/30",
   },
   cancelled: {
     label: "Cancelled",

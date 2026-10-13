@@ -1,7 +1,8 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { FileText, Loader2, Save, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Loader2, Save, Eye, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -9,8 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ReactMarkdown from "react-markdown";
+import { PolicyContent } from "@/components/legal/PolicyContent";
 
 export const Route = createFileRoute("/_authenticated/_super_admin/super-admin/policies")({
   component: PoliciesManagement,
@@ -23,12 +23,16 @@ const POLICY_TYPES = [
   { type: "seller_agreement", label: "Seller Agreement", route: "/legal/seller-agreement" },
   { type: "marketplace_rules", label: "Marketplace Rules", route: "/legal/marketplace-rules" },
   { type: "cod_policy", label: "COD Policy", route: "/legal/cod-policy" },
+  { type: "return_policy", label: "Refund Policy", route: "/legal/return-policy" },
 ] as const;
 
+type PolicyType = (typeof POLICY_TYPES)[number]["type"];
+
 function PoliciesManagement() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [selectedType, setSelectedType] = useState<string>("terms_and_conditions");
+  const [selectedType, setSelectedType] = useState<PolicyType>("terms_and_conditions");
   const [previewMode, setPreviewMode] = useState(false);
 
   const { data: policies = [], isLoading } = useQuery({
@@ -45,18 +49,19 @@ function PoliciesManagement() {
     title: currentPolicy?.title || "",
     content: currentPolicy?.content || "",
     version: currentPolicy?.version || "1.0",
+    effective_date: currentPolicy?.effective_date || "",
   });
 
-  // Update form when selected policy changes
-  useState(() => {
+  useEffect(() => {
     if (currentPolicy) {
       setFormData({
         title: currentPolicy.title,
         content: currentPolicy.content,
         version: currentPolicy.version,
+        effective_date: currentPolicy.effective_date,
       });
     }
-  });
+  }, [currentPolicy]);
 
   const updatePolicy = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -71,7 +76,7 @@ function PoliciesManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Policy updated successfully");
+      toast.success(t("roles.policy_updated_successfully"));
       qc.invalidateQueries({ queryKey: ["admin-policies"] });
       qc.invalidateQueries({ queryKey: ["policy", selectedType] });
     },
@@ -95,10 +100,10 @@ function PoliciesManagement() {
           <FileText className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">
-            Super admin
-          </p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold">Manage Policies</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">Super admin</p>
+          <h1 className="font-display text-3xl md:text-4xl font-bold">
+            {t("roles.manage_policies")}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Update legal documents and platform agreements
           </p>
@@ -119,6 +124,7 @@ function PoliciesManagement() {
                     title: policy.title,
                     content: policy.content,
                     version: policy.version,
+                    effective_date: policy.effective_date,
                   });
                 }
                 setPreviewMode(false);
@@ -157,7 +163,7 @@ function PoliciesManagement() {
               <Button
                 size="sm"
                 onClick={() => updatePolicy.mutate(formData)}
-                disabled={updatePolicy.isPending}
+                disabled={updatePolicy.isPending || !currentPolicy}
                 className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
               >
                 {updatePolicy.isPending ? (
@@ -171,13 +177,11 @@ function PoliciesManagement() {
           </div>
 
           {previewMode ? (
-            <div className="prose prose-slate dark:prose-invert max-w-none">
-              <ReactMarkdown>{formData.content}</ReactMarkdown>
-            </div>
+            <PolicyContent content={formData.content} />
           ) : (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="title">Policy Title</Label>
+                <Label htmlFor="title">{t("roles.policy_title")}</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -187,25 +191,36 @@ function PoliciesManagement() {
               </div>
 
               <div>
-                <Label htmlFor="version">Version</Label>
+                <Label htmlFor="version">{t("roles.version")}</Label>
                 <Input
                   id="version"
                   value={formData.version}
                   onChange={(e) => setFormData({ ...formData, version: e.target.value })}
                   className="mt-1.5"
-                  placeholder="e.g., 1.0, 2.1"
+                  placeholder={t("roles.e_g_1_0_2_1")}
                 />
               </div>
 
               <div>
-                <Label htmlFor="content">Content (Markdown supported)</Label>
+                <Label htmlFor="effective-date">{t("roles.effective_date")}</Label>
+                <Input
+                  id="effective-date"
+                  type="date"
+                  value={formData.effective_date}
+                  onChange={(e) => setFormData({ ...formData, effective_date: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="content">{t("roles.content_markdown_supported")}</Label>
                 <Textarea
                   id="content"
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   rows={20}
                   className="mt-1.5 font-mono text-sm"
-                  placeholder="Write policy content in Markdown..."
+                  placeholder={t("roles.write_policy_content_in_markdown")}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   Use Markdown syntax: # Headings, **bold**, *italic*, - lists, etc.
@@ -216,7 +231,8 @@ function PoliciesManagement() {
 
           <div className="mt-6 p-4 bg-secondary rounded-2xl">
             <p className="text-sm text-muted-foreground">
-              📌 Public URL:{" "}
+              <Link2 className="inline h-3.5 w-3.5 mr-1 align-[-0.15em]" />
+              Public URL:{" "}
               <a
                 href={POLICY_TYPES.find((pt) => pt.type === selectedType)?.route}
                 target="_blank"

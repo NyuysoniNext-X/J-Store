@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, MessageSquare, Wallet } from "lucide-react";
+import { Loader2, ShieldCheck, MessageSquare, Wallet, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
@@ -16,12 +17,13 @@ export const Route = createFileRoute("/signup")({
 });
 
 const FEATURES = [
-  { icon: ShieldCheck, label: "Escrow-protected payments" },
-  { icon: MessageSquare, label: "Order updates via WhatsApp" },
-  { icon: Wallet, label: "Mobile Money & card checkout" },
+  { icon: ShieldCheck, key: "auth.escrowPayments" },
+  { icon: MessageSquare, key: "auth.whatsappUpdates" },
+  { icon: Wallet, key: "auth.mobileMoneyCheckout" },
 ];
 
 function SignupPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -44,7 +46,7 @@ function SignupPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Account created — check your email to confirm");
+    toast.success(t("auth.accountCreated"));
     navigate({ to: "/login" });
   };
 
@@ -67,29 +69,33 @@ function SignupPage() {
           <div>
             <Logo className="[&_span]:text-white [&_.text-gold]:text-gold" />
             <div className="mt-12">
-              <h2 className="font-display text-2xl font-bold leading-snug">Create your account</h2>
+              <h2 className="font-display text-2xl font-bold leading-snug">
+                {t("auth.createYourAccount")}
+              </h2>
               <p className="text-sm text-white/60 mt-2">
-                Join J-STORE to shop, track orders, and manage your store.
+                {t("auth.signUpIntro")}
               </p>
             </div>
             <ul className="mt-8 space-y-3">
-              {FEATURES.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-2.5 text-sm text-white/80">
+              {FEATURES.map(({ icon: Icon, key }) => (
+                <li key={key} className="flex items-center gap-2.5 text-sm text-white/80">
                   <Icon className="h-4 w-4 text-gold shrink-0" />
-                  {label}
+                  {t(key)}
                 </li>
               ))}
             </ul>
           </div>
-          <p className="text-[11px] text-white/30 mt-12">© 2026 J-Store · Made in Cameroon 🇨🇲</p>
+          <p className="text-[11px] text-white/30 mt-12">
+            © 2026 J-Store · Made in Cameroon <MapPin className="inline h-3 w-3 align-[-0.1em]" />
+          </p>
         </div>
 
         <div className="flex-1 bg-card p-6 sm:p-8 flex max-h-[calc(100dvh-2rem)] flex-col justify-center overflow-y-auto sm:max-h-none">
-          <h1 className="font-display text-2xl font-bold">Create account</h1>
+          <h1 className="font-display text-2xl font-bold">{t("auth.createAccount")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Already have an account?{" "}
+            {t("auth.alreadyAccount")}{" "}
             <Link to="/login" className="text-gold font-medium hover:underline">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
 
@@ -108,7 +114,7 @@ function SignupPage() {
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 />
                 <path
-                  fill="#34A853"
+                  fill="#D9A62E"
                   d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                 />
                 <path
@@ -121,24 +127,24 @@ function SignupPage() {
                 />
               </svg>
             )}
-            Continue with Google
+            {t("auth.continueGoogle")}
           </Button>
 
           <div className="flex items-center gap-3 my-5 text-xs text-muted-foreground">
             <div className="flex-1 h-px bg-border" />
-            or with email
+            {t("auth.orEmail")}
             <div className="flex-1 h-px bg-border" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1">
               <label htmlFor="name" className="text-xs font-medium text-muted-foreground">
-                Full name
+                {t("auth.fullName")}
               </label>
               <Input
                 id="name"
                 required
-                placeholder="Full name"
+                placeholder={t("auth.fullName")}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="rounded-xl h-11"
@@ -146,7 +152,7 @@ function SignupPage() {
             </div>
             <div className="space-y-1">
               <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-                Email
+                {t("auth.email")}
               </label>
               <Input
                 id="email"
@@ -160,7 +166,7 @@ function SignupPage() {
             </div>
             <div className="space-y-1">
               <label htmlFor="phone" className="text-xs font-medium text-muted-foreground">
-                Phone
+                {t("auth.phone")}
               </label>
               <Input
                 id="phone"
@@ -173,7 +179,7 @@ function SignupPage() {
             </div>
             <div className="space-y-1">
               <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
-                Password
+                {t("auth.password")}
               </label>
               <Input
                 id="password"
@@ -191,12 +197,12 @@ function SignupPage() {
               disabled={loading || googleLoading}
               className="w-full rounded-xl h-11 bg-gold text-gold-foreground hover:bg-gold/90 font-semibold"
             >
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create account"}
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t("auth.createAccount")}
             </Button>
           </form>
 
           <p className="text-xs text-center mt-4 text-muted-foreground">
-            By signing up you agree to our Terms and Privacy.
+            {t("auth.termsNotice")}
           </p>
         </div>
       </div>

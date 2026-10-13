@@ -19,13 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { PLATFORM_MOMO } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
   head: () => ({ meta: [{ title: "Checkout — J-STORE.cm" }] }),
 });
 
-const STEPS = ["Shipping", "Delivery", "Payment"];
+const STEPS = ["checkout.shippingStep", "checkout.deliveryStep", "checkout.paymentStep"];
 
 const DELIVERY_ZONES = [
   {
@@ -60,6 +61,29 @@ function getCity(city: string) {
   return DELIVERY_ZONES.find((z) => z.city === city) ?? DELIVERY_ZONES[DELIVERY_ZONES.length - 1];
 }
 
+function translateDeliveryValue(value: string, t: (key: string) => string) {
+  const keyByValue: Record<string, string> = {
+    "Centre (Akwa, Bonanjo, Deido)": "delivery.zoneDoualaCentre",
+    "Extended (Makepe, Bepanda, Bonaberi)": "delivery.zoneDoualaExtended",
+    "Centre (Bastos, Mvog-Mbi)": "delivery.zoneYaoundeCentre",
+    "Extended (Obili, Efoulan)": "delivery.zoneYaoundeExtended",
+    "City centre": "delivery.zoneCityCentre",
+    "Seller-managed delivery": "delivery.zoneSellerManaged",
+  };
+  return keyByValue[value] ? t(keyByValue[value]) : value;
+}
+
+function translateDeliveryTime(value: string, t: (key: string) => string) {
+  const keyByValue: Record<string, string> = {
+    "2–4 hours": "delivery.time2to4",
+    "4–6 hours": "delivery.time4to6",
+    "6–8 hours": "delivery.time6to8",
+    "Next day": "delivery.nextDay",
+    "Arranged with seller": "delivery.arrangedSeller",
+  };
+  return keyByValue[value] ? t(keyByValue[value]) : value;
+}
+
 const FREE_DELIVERY_THRESHOLD = 50_000;
 const PLATFORM_FEE_PCT = 5;
 
@@ -71,6 +95,7 @@ const MOMO_PROVIDERS: { id: MomoProvider; label: string; color: string }[] = [
 ];
 
 function CheckoutPage() {
+  const { t } = useI18n();
   const items = useCartDetailed();
   const subtotal = useCartSubtotal();
   const clear = useCart((s) => s.clear);
@@ -92,6 +117,7 @@ function CheckoutPage() {
   // Kept so a failed "pay now" retry reuses the same order instead of creating (and
   // reserving stock for) a second one.
   const [groupId, setGroupId] = useState<string | null>(null);
+  const [groupProvider, setGroupProvider] = useState<MomoProvider | null>(null);
 
   const cityZones = getCity(city);
   const baseFee = cityZones.tiers[zoneIdx]?.fee ?? 0;
@@ -112,7 +138,7 @@ function CheckoutPage() {
   async function placeOrder() {
     if (!canSubmit) return;
     if (!isAuthenticated || !user) {
-      toast.error("Please sign in to place an order.");
+      toast.error(t("checkout.signInRequired"));
       nav({ to: "/login", search: { redirect: "/checkout" } });
       return;
     }
@@ -120,7 +146,8 @@ function CheckoutPage() {
     setPlacing(true);
     try {
       const instant = payMode === "instant";
-      const paymentMethod = momoProvider === "mtn" ? "mtn_momo" : "orange_money";
+      const activeProvider = groupProvider ?? momoProvider;
+      const paymentMethod = activeProvider === "mtn" ? "mtn_momo" : "orange_money";
       let gid = instant ? groupId : null;
       let groupNumber = "";
       let groupTotal = total;
@@ -141,7 +168,7 @@ function CheckoutPage() {
           p_flow: instant ? "api" : "manual",
         });
         if (error) throw error;
-        if (!data) throw new Error("Order was not created");
+        if (!data) throw new Error(t("checkout.orderNotCreated"));
         const result = data as unknown as {
           order_group_id: string;
           group_number: string;
@@ -150,7 +177,10 @@ function CheckoutPage() {
         gid = result.order_group_id;
         groupNumber = result.group_number;
         groupTotal = result.total;
-        if (instant) setGroupId(gid);
+        if (instant) {
+          setGroupId(gid);
+          setGroupProvider(activeProvider);
+        }
       }
 
       if (!instant) {
@@ -160,9 +190,9 @@ function CheckoutPage() {
       }
 
       const { data: pay, error: payErr } = await supabase.functions.invoke("payments/initiate", {
-        body: { order_group_id: gid, provider: momoProvider, phone: payerNumber },
+        body: { order_group_id: gid, provider: activeProvider, phone: payerNumber },
       });
-      if (payErr) throw new Error("Could not start the payment. Please try again.");
+      if (payErr) throw new Error(t("checkout.paymentStartError"));
       if (pay?.error) throw new Error(pay.error);
 
       // Cart is emptied on the confirmation page, once the money is confirmed.
@@ -172,7 +202,7 @@ function CheckoutPage() {
       }
       nav({ to: "/payment-return", search: { group: gid } });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to place order";
+      const msg = err instanceof Error ? err.message : t("checkout.orderFailed");
       toast.error(msg);
     } finally {
       setPlacing(false);
@@ -181,18 +211,18 @@ function CheckoutPage() {
 
   function copyNumber() {
     void navigator.clipboard.writeText(selectedMomo.number);
-    toast.success(`${selectedMomo.provider} number copied!`);
+    toast.success(t("checkout.copiedNumber", { provider: selectedMomo.provider }));
   }
 
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-md text-center py-24 px-6">
-        <h1 className="font-display text-2xl font-bold mb-3">Your cart is empty</h1>
+        <h1 className="font-display text-2xl font-bold mb-3">{t("cart.empty")}</h1>
         <Button
           asChild
           className="rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
         >
-          <Link to="/shop">Browse products</Link>
+          <Link to="/shop">{t("checkout.browseProducts")}</Link>
         </Button>
       </div>
     );
@@ -200,8 +230,8 @@ function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
-      <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">Secure checkout</h1>
-      <p className="text-muted-foreground mb-8">Complete your order in 3 steps</p>
+      <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">{t("checkout.secure")}</h1>
+      <p className="text-muted-foreground mb-8">{t("checkout.completeSteps")}</p>
 
       {/* Step indicator */}
       <div className="flex items-center gap-2 md:gap-4 mb-10">
@@ -219,7 +249,7 @@ function CheckoutPage() {
                 i === step ? "text-foreground" : "text-muted-foreground"
               }`}
             >
-              {s}
+              {t(s)}
             </span>
             {i < STEPS.length - 1 && (
               <div className={`h-px flex-1 ${i < step ? "bg-gold" : "bg-border"}`} />
@@ -234,11 +264,11 @@ function CheckoutPage() {
           {/* ── Step 0 — Shipping ── */}
           {step === 0 && (
             <>
-              <h2 className="font-display text-xl font-semibold">Delivery details</h2>
+              <h2 className="font-display text-xl font-semibold">{t("checkout.deliveryDetails")}</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">
-                    Full name <span className="text-gold">*</span>
+                    {t("auth.fullName")} <span className="text-gold">*</span>
                   </label>
                   <Input
                     placeholder="e.g. Amina Diop"
@@ -248,7 +278,7 @@ function CheckoutPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">
-                    Phone (WhatsApp) <span className="text-gold">*</span>
+                    {t("checkout.phoneWhatsapp")} <span className="text-gold">*</span>
                   </label>
                   <Input
                     placeholder="6XX XXX XXX"
@@ -258,7 +288,7 @@ function CheckoutPage() {
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-sm font-medium">
-                    Address <span className="text-gold">*</span>
+                    {t("checkout.address")} <span className="text-gold">*</span>
                   </label>
                   <Input
                     placeholder="Quarter, street, landmark…"
@@ -267,7 +297,7 @@ function CheckoutPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">City</label>
+                  <label className="text-sm font-medium">{t("checkout.city")}</label>
                   <select
                     value={city}
                     onChange={(e) => {
@@ -278,22 +308,24 @@ function CheckoutPage() {
                   >
                     {DELIVERY_ZONES.map((z) => (
                       <option key={z.city} value={z.city}>
-                        {z.city}
-                        {!z.managed ? " (seller delivery)" : ""}
+                        {z.city === "Other" ? t("delivery.cityOther") : z.city}
+                        {!z.managed ? ` (${t("checkout.sellerDelivery")})` : ""}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Delivery option</label>
+                  <label className="text-sm font-medium">{t("checkout.deliveryOption")}</label>
                   <select
                     value={zoneIdx}
                     onChange={(e) => setZoneIdx(Number(e.target.value))}
                     className="w-full h-11 rounded-lg px-3 bg-secondary border border-transparent focus:outline-none focus:border-gold text-sm"
                   >
-                    {cityZones.tiers.map((t, i) => (
-                      <option key={t.name} value={i}>
-                        {t.name} — {t.time} ({t.fee === 0 ? "free" : formatXAF(t.fee)})
+                    {cityZones.tiers.map((tier, i) => (
+                      <option key={tier.name} value={i}>
+                        {translateDeliveryValue(tier.name, t)} —{" "}
+                        {translateDeliveryTime(tier.time, t)} (
+                        {tier.fee === 0 ? t("cart.free") : formatXAF(tier.fee)})
                       </option>
                     ))}
                   </select>
@@ -305,36 +337,40 @@ function CheckoutPage() {
           {/* ── Step 1 — Confirm delivery ── */}
           {step === 1 && (
             <>
-              <h2 className="font-display text-xl font-semibold">Confirm delivery</h2>
+              <h2 className="font-display text-xl font-semibold">{t("checkout.confirmDelivery")}</h2>
               <div className="rounded-xl border border-gold/40 bg-gold/5 p-4 text-sm space-y-1">
                 <p>
-                  <span className="text-muted-foreground">Name:</span> <strong>{fullName}</strong>
+                  <span className="text-muted-foreground">{t("checkout.name")}</span>{" "}
+                  <strong>{fullName}</strong>
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Phone:</span> <strong>{phone}</strong>
+                  <span className="text-muted-foreground">{t("checkout.phoneLabel")}</span>{" "}
+                  <strong>{phone}</strong>
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Address:</span> {address}
+                  <span className="text-muted-foreground">{t("checkout.addressLabel")}</span>{" "}
+                  {address}
                 </p>
                 <p>
-                  <span className="text-muted-foreground">City / zone:</span> {city} —{" "}
-                  {cityZones.tiers[zoneIdx]?.name}
+                  <span className="text-muted-foreground">{t("checkout.cityZone")}</span>{" "}
+                  {city === "Other" ? t("delivery.cityOther") : city} —{" "}
+                  {translateDeliveryValue(cityZones.tiers[zoneIdx]?.name ?? "", t)}
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Estimated:</span>{" "}
-                  {cityZones.tiers[zoneIdx]?.time}
+                  <span className="text-muted-foreground">{t("checkout.estimated")}</span>{" "}
+                  {translateDeliveryTime(cityZones.tiers[zoneIdx]?.time ?? "", t)}
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Delivery fee:</span>{" "}
+                  <span className="text-muted-foreground">{t("checkout.deliveryFee")}</span>{" "}
                   {shipping === 0 ? (
-                    <span className="text-gold font-semibold">Free</span>
+                    <span className="text-gold font-semibold">{t("cart.free")}</span>
                   ) : (
                     formatXAF(shipping)
                   )}
                 </p>
               </div>
               <button onClick={() => setStep(0)} className="text-xs text-gold hover:underline">
-                ← Edit address
+                {t("checkout.editAddress")}
               </button>
             </>
           )}
@@ -342,18 +378,21 @@ function CheckoutPage() {
           {/* ── Step 2 — Manual MoMo Payment ── */}
           {step === 2 && (
             <>
-              <h2 className="font-display text-xl font-semibold">Payment</h2>
+              <h2 className="font-display text-xl font-semibold">{t("checkout.paymentStep")}</h2>
 
               {/* Provider selector */}
               <div>
-                <p className="text-sm font-medium mb-3">Choose payment network</p>
+                <p className="text-sm font-medium mb-3">{t("checkout.chooseNetwork")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {MOMO_PROVIDERS.map((p) => (
                     <button
                       key={p.id}
+                      disabled={Boolean(groupId)}
                       onClick={() => setMomoProvider(p.id)}
                       className={`border-2 rounded-xl p-4 text-left font-semibold text-sm transition-colors ${
-                        momoProvider === p.id ? p.color : "border-border hover:border-gold/40"
+                        (groupProvider ?? momoProvider) === p.id
+                          ? p.color
+                          : "border-border hover:border-gold/40"
                       }`}
                     >
                       <Phone className="h-5 w-5 mb-2 text-gold" />
@@ -365,16 +404,17 @@ function CheckoutPage() {
 
               {/* Pay mode */}
               <div>
-                <p className="text-sm font-medium mb-3">How do you want to pay?</p>
+                <p className="text-sm font-medium mb-3">{t("checkout.howPay")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {(
                     [
-                      ["instant", "Pay instantly", "Approve on your phone"],
-                      ["manual", "Send manually", "Transfer, then enter the reference"],
+                      ["instant", "checkout.payInstantly", "checkout.approvePhone"],
+                      ["manual", "checkout.sendManually", "checkout.transferEnterRef"],
                     ] as const
                   ).map(([id, title, sub]) => (
                     <button
                       key={id}
+                      disabled={Boolean(groupId)}
                       onClick={() => setPayMode(id)}
                       className={`border-2 rounded-xl p-4 text-left text-sm transition-colors ${
                         payMode === id
@@ -382,8 +422,8 @@ function CheckoutPage() {
                           : "border-border hover:border-gold/40"
                       }`}
                     >
-                      <span className="font-semibold block">{title}</span>
-                      <span className="text-xs text-muted-foreground">{sub}</span>
+                      <span className="font-semibold block">{t(title)}</span>
+                      <span className="text-xs text-muted-foreground">{t(sub)}</span>
                     </button>
                   ))}
                 </div>
@@ -393,7 +433,7 @@ function CheckoutPage() {
                 <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-3">
                   {momoProvider === "mtn" ? (
                     <>
-                      <label className="text-sm font-medium">MTN MoMo number</label>
+                      <label className="text-sm font-medium">{t("checkout.mtnNumber")}</label>
                       <Input
                         inputMode="tel"
                         placeholder={phone || "6XX XXX XXX"}
@@ -402,18 +442,16 @@ function CheckoutPage() {
                       />
                       {!payerFormatOk && (payerPhone.trim() || phone.trim()) && (
                         <p className="text-xs text-destructive">
-                          Enter a valid MTN number, for example 6XX XXX XXX.
+                          {t("checkout.validMtn")}
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        We send a payment request to this number. Approve it with your MoMo PIN.
-                        Leave empty to use your delivery phone number.
+                        {t("checkout.paymentRequest")}
                       </p>
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      You will be taken to Orange Money to approve the payment securely, then
-                      brought back here automatically.
+                      {t("checkout.orangeRedirect")}
                     </p>
                   )}
                 </div>
@@ -423,21 +461,22 @@ function CheckoutPage() {
                 <>
                   {/* How-to card */}
                   <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-4">
-                    <p className="text-sm font-semibold">How to pay with {selectedMomo.label}</p>
+                    <p className="text-sm font-semibold">
+                      {t("checkout.howToPay", { provider: selectedMomo.label })}
+                    </p>
                     <ol className="text-sm space-y-3 text-muted-foreground list-none">
                       <li className="flex gap-3">
                         <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                           1
                         </span>
-                        Open your {selectedMomo.label} app or dial the USSD code on your phone.
+                        {t("checkout.openProvider", { provider: selectedMomo.label })}
                       </li>
                       <li className="flex gap-3">
                         <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                           2
                         </span>
                         <span>
-                          Transfer exactly{" "}
-                          <strong className="text-foreground">{formatXAF(total)}</strong> to:
+                          {t("checkout.transferAmount", { amount: formatXAF(total) })}{" "}
                           <span className="flex items-center gap-2 mt-1">
                             <span className="font-mono text-base font-bold text-foreground">
                               {selectedMomo.number}
@@ -445,13 +484,13 @@ function CheckoutPage() {
                             <button
                               onClick={copyNumber}
                               className="text-gold hover:text-gold/70 transition-colors"
-                              aria-label="Copy number"
+                              aria-label={t("checkout.copyNumber")}
                             >
                               <Copy className="h-4 w-4" />
                             </button>
                           </span>
                           <span className="text-xs text-muted-foreground block mt-0.5">
-                            Beneficiary: J-STORE.cm
+                            {t("checkout.beneficiary")}
                           </span>
                         </span>
                       </li>
@@ -459,14 +498,14 @@ function CheckoutPage() {
                         <span className="h-6 w-6 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                           3
                         </span>
-                        Copy the transaction ID / reference number you receive and paste it below.
+                        {t("checkout.transactionRefInstruction")}
                       </li>
                     </ol>
 
                     {/* Transaction ref input */}
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium">
-                        Transaction reference <span className="text-gold">*</span>
+                        {t("checkout.transactionReference")} <span className="text-gold">*</span>
                       </label>
                       <Input
                         placeholder="e.g. TXN2026091600123456"
@@ -475,7 +514,7 @@ function CheckoutPage() {
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        The reference ID shown in your {selectedMomo.label} confirmation SMS.
+                        {t("checkout.referenceSms", { provider: selectedMomo.label })}
                       </p>
                     </div>
                   </div>
@@ -484,9 +523,7 @@ function CheckoutPage() {
                   <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-sm text-amber-700 dark:text-amber-400">
                     <Clock className="h-4 w-4 mt-0.5 shrink-0" />
                     <p>
-                      After submitting, our team will verify your transaction within{" "}
-                      <strong>3 hours</strong>. You'll receive a notification when your order is
-                      confirmed.
+                      {t("checkout.verificationTime")}
                     </p>
                   </div>
                 </>
@@ -496,22 +533,21 @@ function CheckoutPage() {
                 <div className="flex items-start gap-3 rounded-xl bg-destructive/10 border border-destructive/30 p-4 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <p>
-                    Please{" "}
+                    {t("checkout.loginPrefix")}
                     <Link
                       to="/login"
                       search={{ redirect: "/checkout" }}
                       className="underline font-medium"
                     >
-                      sign in
-                    </Link>{" "}
-                    to place an order.
+                      {t("auth.signIn")}
+                    </Link>                    {t("checkout.loginSuffix")}
                   </p>
                 </div>
               )}
 
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                 <Lock className="h-3.5 w-3.5" />
-                Your order is protected — payment held until delivery confirmed.
+                {t("checkout.protected")}
               </p>
             </>
           )}
@@ -520,14 +556,14 @@ function CheckoutPage() {
           <div className="flex justify-between pt-4 border-t border-border">
             {step > 0 ? (
               <Button variant="outline" className="rounded-full" onClick={() => setStep(step - 1)}>
-                Back
+                {t("checkout.back")}
               </Button>
             ) : (
               <Link
                 to="/cart"
                 className="text-sm text-muted-foreground hover:underline self-center"
               >
-                ← Back to cart
+                {t("checkout.backToCart")}
               </Link>
             )}
             {step < STEPS.length - 1 ? (
@@ -536,21 +572,22 @@ function CheckoutPage() {
                 disabled={step === 0 && (!fullName.trim() || !phone.trim() || !address.trim())}
                 onClick={() => setStep(step + 1)}
               >
-                Continue <ChevronRight className="ml-1 h-4 w-4" />
+                {t("checkout.continue")} <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
               <Button
-                className="rounded-full bg-emerald text-emerald-foreground hover:bg-emerald/90 h-12 px-7"
+                className="rounded-full bg-gold text-gold-foreground hover:bg-gold/90 h-12 px-7"
                 disabled={!canSubmit || placing || !isAuthenticated}
                 onClick={placeOrder}
               >
                 {placing ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Placing order…
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("checkout.placingOrder")}
                   </>
                 ) : (
                   <>
-                    {payMode === "instant" ? "Pay now" : "Place order"} · {formatXAF(total)}
+                    {payMode === "instant" ? t("checkout.payNow") : t("checkout.placeOrder")} ·{" "}
+                    {formatXAF(total)}
                   </>
                 )}
               </Button>
@@ -560,7 +597,7 @@ function CheckoutPage() {
 
         {/* Order summary */}
         <aside className="bg-card border border-border rounded-2xl p-6 h-fit lg:sticky lg:top-32 space-y-4">
-          <h3 className="font-display text-lg font-semibold">Order summary</h3>
+          <h3 className="font-display text-lg font-semibold">{t("cart.orderSummary")}</h3>
           <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
             {items.map(({ product, qty }) => (
               <div key={product.id} className="flex gap-3 text-sm">
@@ -580,7 +617,9 @@ function CheckoutPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="line-clamp-1 font-medium">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">Qty {qty}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("checkout.quantity", { qty })}
+                  </p>
                 </div>
                 <p className="font-medium shrink-0">{formatXAF(product.price * qty)}</p>
               </div>
@@ -588,27 +627,27 @@ function CheckoutPage() {
           </div>
           <div className="pt-4 border-t border-border space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("cart.subtotal")}</span>
               <span>{formatXAF(subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
+              <span className="text-muted-foreground">{t("cart.shipping")}</span>
               <span>
                 {shipping === 0 ? (
-                  <span className="text-gold font-medium">Free</span>
+                  <span className="text-gold font-medium">{t("cart.free")}</span>
                 ) : (
                   formatXAF(shipping)
                 )}
               </span>
             </div>
             <div className="flex justify-between font-display font-bold pt-2 border-t border-border text-base">
-              <span>Total</span>
+              <span>{t("cart.total")}</span>
               <span>{formatXAF(total)}</span>
             </div>
           </div>
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
             <ShieldCheck className="h-3.5 w-3.5 text-gold" />
-            Escrow-protected · {PLATFORM_FEE_PCT}% platform fee
+            {t("checkout.escrowProtected", { fee: PLATFORM_FEE_PCT })}
           </div>
         </aside>
       </div>

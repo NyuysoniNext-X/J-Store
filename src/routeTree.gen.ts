@@ -31,6 +31,7 @@ import { Route as DeliveryCompanyRouteImport } from './routes/delivery.company'
 import { Route as LegalCodPolicyRouteImport } from './routes/legal.cod-policy'
 import { Route as LegalMarketplaceRulesRouteImport } from './routes/legal.marketplace-rules'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
+import { Route as LegalReturnPolicyRouteImport } from './routes/legal.return-policy'
 import { Route as LegalSellerAgreementRouteImport } from './routes/legal.seller-agreement'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
@@ -156,6 +157,11 @@ const LegalMarketplaceRulesRoute = LegalMarketplaceRulesRouteImport.update({
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalReturnPolicyRoute = LegalReturnPolicyRouteImport.update({
+  id: '/legal/return-policy',
+  path: '/legal/return-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalSellerAgreementRoute = LegalSellerAgreementRouteImport.update({
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/legal/cod-policy': typeof LegalCodPolicyRoute
   '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
   '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/return-policy': typeof LegalReturnPolicyRoute
   '/legal/seller-agreement': typeof LegalSellerAgreementRoute
   '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/legal/cod-policy': typeof LegalCodPolicyRoute
   '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
   '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/return-policy': typeof LegalReturnPolicyRoute
   '/legal/seller-agreement': typeof LegalSellerAgreementRoute
   '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
@@ -376,6 +384,7 @@ export interface FileRoutesById {
   '/legal/cod-policy': typeof LegalCodPolicyRoute
   '/legal/marketplace-rules': typeof LegalMarketplaceRulesRoute
   '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/return-policy': typeof LegalReturnPolicyRoute
   '/legal/seller-agreement': typeof LegalSellerAgreementRoute
   '/legal/terms': typeof LegalTermsRoute
   '/product/$id': typeof ProductIdRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/legal/cod-policy'
     | '/legal/marketplace-rules'
     | '/legal/privacy'
+    | '/legal/return-policy'
     | '/legal/seller-agreement'
     | '/legal/terms'
     | '/product/$id'
@@ -456,6 +466,7 @@ export interface FileRouteTypes {
     | '/legal/cod-policy'
     | '/legal/marketplace-rules'
     | '/legal/privacy'
+    | '/legal/return-policy'
     | '/legal/seller-agreement'
     | '/legal/terms'
     | '/product/$id'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/legal/cod-policy'
     | '/legal/marketplace-rules'
     | '/legal/privacy'
+    | '/legal/return-policy'
     | '/legal/seller-agreement'
     | '/legal/terms'
     | '/product/$id'
@@ -539,6 +551,7 @@ export interface RootRouteChildren {
   LegalCodPolicyRoute: typeof LegalCodPolicyRoute
   LegalMarketplaceRulesRoute: typeof LegalMarketplaceRulesRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
+  LegalReturnPolicyRoute: typeof LegalReturnPolicyRoute
   LegalSellerAgreementRoute: typeof LegalSellerAgreementRoute
   LegalTermsRoute: typeof LegalTermsRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -700,6 +713,13 @@ declare module '@tanstack/react-router' {
       path: '/legal/privacy'
       fullPath: '/legal/privacy'
       preLoaderRoute: typeof LegalPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/return-policy': {
+      id: '/legal/return-policy'
+      path: '/legal/return-policy'
+      fullPath: '/legal/return-policy'
+      preLoaderRoute: typeof LegalReturnPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal/seller-agreement': {
@@ -961,6 +981,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalCodPolicyRoute: LegalCodPolicyRoute,
   LegalMarketplaceRulesRoute: LegalMarketplaceRulesRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
+  LegalReturnPolicyRoute: LegalReturnPolicyRoute,
   LegalSellerAgreementRoute: LegalSellerAgreementRoute,
   LegalTermsRoute: LegalTermsRoute,
   ProductIdRoute: ProductIdRoute,

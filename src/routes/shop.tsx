@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BOOST_TIER_ORDER, type SellerBoostTier } from "@/lib/types";
 import type { Product } from "@/lib/mock-data";
+import { useI18n } from "@/lib/i18n";
 
 type Search = { category?: string; sort?: string; q?: string };
 
@@ -42,15 +43,16 @@ export const Route = createFileRoute("/shop")({
 });
 
 const SORTS = [
-  { id: "featured", label: "Recommended" },
-  { id: "price-asc", label: "Price: low → high" },
-  { id: "price-desc", label: "Price: high → low" },
-  { id: "rating", label: "Top rated" },
+  { id: "featured", key: "shop.recommended" },
+  { id: "price-asc", key: "shop.priceLowHigh" },
+  { id: "price-desc", key: "shop.priceHighLow" },
+  { id: "rating", key: "shop.topRated" },
 ];
 
 type ProductWithBoost = Product & { boostTier?: SellerBoostTier };
 
 function ShopPage() {
+  const { t } = useI18n();
   const search = Route.useSearch();
   const nav = Route.useNavigate();
   const { products, categories: CATEGORIES, boosts } = Route.useLoaderData();
@@ -105,13 +107,13 @@ function ShopPage() {
   const Sidebar = (
     <aside className="space-y-8 text-sm">
       <div>
-        <h4 className="font-display font-semibold mb-3">Categories</h4>
+        <h4 className="font-display font-semibold mb-3">{t("nav.categories")}</h4>
         <div className="space-y-1">
           <button
             onClick={() => nav({ search: (s: Search) => ({ ...s, category: undefined }) })}
             className={`block w-full text-left py-1.5 px-3 rounded-lg ${!search.category ? "bg-navy text-navy-foreground" : "hover:bg-muted"}`}
           >
-            All
+            {t("common.all")}
           </button>
           {CATEGORIES.map((c) => (
             <button
@@ -131,9 +133,9 @@ function ShopPage() {
     <div className="mx-auto max-w-[1536px] px-6 py-8">
       <nav className="text-xs text-muted-foreground mb-4">
         <Link to="/" className="hover:text-foreground">
-          Home
+          {t("common.home")}
         </Link>{" "}
-        / <span className="text-foreground">Shop</span>
+        / <span className="text-foreground">{t("nav.shop")}</span>
         {search.category && (
           <>
             {" "}
@@ -144,14 +146,18 @@ function ShopPage() {
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold capitalize">
-            {search.q ? `Results for "${search.q}"` : (search.category ?? "All products")}
+            {search.q
+              ? `${t("shop.resultsFor")} "${search.q}"`
+              : search.category
+                ? search.category
+                : t("shop.allProducts")}
           </h1>
           {search.q && (
             <button
               onClick={() => nav({ search: (s: Search) => ({ ...s, q: undefined }) })}
               className="text-xs text-gold hover:underline mt-1 inline-flex items-center gap-1"
             >
-              <X className="h-3 w-3" /> Clear search
+              <X className="h-3 w-3" /> {t("common.clearSearch")}
             </button>
           )}
         </div>
@@ -162,7 +168,7 @@ function ShopPage() {
             className="lg:hidden rounded-full"
             onClick={() => setOpenMobile(true)}
           >
-            <SlidersHorizontal className="h-4 w-4 mr-2" /> Filters
+            <SlidersHorizontal className="h-4 w-4 mr-2" /> {t("common.filters")}
           </Button>
           <select
             value={search.sort ?? "featured"}
@@ -171,7 +177,7 @@ function ShopPage() {
           >
             {SORTS.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.label}
+                {t(s.key)}
               </option>
             ))}
           </select>
@@ -180,16 +186,20 @@ function ShopPage() {
       <div className="grid lg:grid-cols-[240px_1fr] gap-10">
         <div className="hidden lg:block">{Sidebar}</div>
         <div>
-          <p className="text-sm text-muted-foreground mb-4">{filtered.length} products</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {filtered.length} {t("common.products")}
+          </p>
           {filtered.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border rounded-2xl">
               <p className="font-display text-xl">
-                {search.q ? `No results for "${search.q}"` : "No products match your filters"}
+                {search.q
+                  ? `${t("shop.noResultsFor")} "${search.q}"`
+                  : t("common.noProductsForFilters")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {search.q
-                  ? "Try a different word, or browse by category instead."
-                  : "Try widening your selection."}
+                  ? t("common.noSearchResults")
+                  : t("common.widenSelection")}
               </p>
             </div>
           ) : (
@@ -207,8 +217,8 @@ function ShopPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpenMobile(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <p className="font-display text-lg font-semibold">Filters</p>
-              <button onClick={() => setOpenMobile(false)} aria-label="Close">
+              <p className="font-display text-lg font-semibold">{t("common.filters")}</p>
+              <button onClick={() => setOpenMobile(false)} aria-label={t("nav.close")}>
                 <X className="h-5 w-5" />
               </button>
             </div>

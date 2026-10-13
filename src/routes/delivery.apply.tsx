@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ const emptyForm = {
 function DeliveryApplyPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const [form, setForm] = useState(emptyForm);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
@@ -75,7 +77,7 @@ function DeliveryApplyPage() {
 
   const submit = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Please sign in before applying.");
+      if (!user) throw new Error(t("deliveryApply.signInFirst"));
       const [id_url, license_url, company_document_url] = await Promise.all([
         uploadDoc(idFile, "id"),
         uploadDoc(licenseFile, "license"),
@@ -107,7 +109,7 @@ function DeliveryApplyPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Delivery application submitted");
+      toast.success(t("deliveryApply.submitted"));
       navigate({ to: "/profile" });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -117,16 +119,14 @@ function DeliveryApplyPage() {
     return (
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
         <Truck className="mx-auto mb-4 h-12 w-12 text-gold" />
-        <h1 className="font-display text-3xl font-bold">Sign in to apply</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Create or access your J-STORE account before applying for delivery access.
-        </p>
+        <h1 className="font-display text-3xl font-bold">{t("deliveryApply.signInToApply")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("deliveryApply.accountPrompt")}</p>
         <Button
           asChild
           className="mt-6 rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
         >
           <Link to="/login" search={{ redirect: "/delivery/apply" }}>
-            Sign in
+            {t("deliveryApply.signIn")}
           </Link>
         </Button>
       </div>
@@ -138,24 +138,22 @@ function DeliveryApplyPage() {
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-            Delivery network
+            {t("deliveryApply.network")}
           </p>
-          <h1 className="font-display text-3xl font-bold md:text-4xl">Apply for delivery access</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Register as an independent delivery partner or as a delivery company. Super admins
-            review applications before dashboard access is granted.
-          </p>
+          <h1 className="font-display text-3xl font-bold md:text-4xl">
+            {t("deliveryApply.title")}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("deliveryApply.intro")}</p>
         </div>
       </div>
 
       {existing.length > 0 && (
         <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm">
           <p className="font-semibold">
-            Latest application: <span className="capitalize text-gold">{existing[0].status}</span>
+            {t("deliveryApply.latestApplication")}{" "}
+            <span className="capitalize text-gold">{existing[0].status}</span>
           </p>
-          <p className="mt-1 text-muted-foreground">
-            You can submit a new application if your delivery details have changed.
-          </p>
+          <p className="mt-1 text-muted-foreground">{t("deliveryApply.resubmitPrompt")}</p>
         </div>
       )}
 
@@ -178,11 +176,11 @@ function DeliveryApplyPage() {
                 className={`rounded-2xl border p-4 text-left transition-colors ${active ? "border-gold bg-gold/10" : "border-border hover:border-gold/40"}`}
               >
                 <Icon className="mb-3 h-5 w-5 text-gold" />
-                <p className="font-semibold capitalize">{type}</p>
+                <p className="font-semibold capitalize">{t(`deliveryApply.${type}`)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {type === "individual"
-                    ? "One person handling deliveries."
-                    : "A registered company with a delivery team."}
+                    ? t("deliveryApply.individualDescription")
+                    : t("deliveryApply.companyDescription")}
                 </p>
               </button>
             );
@@ -190,14 +188,14 @@ function DeliveryApplyPage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <Field label="Full name / contact person">
+          <Field label={t("deliveryApply.fullName")}>
             <Input
               required
               value={form.full_name}
               onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             />
           </Field>
-          <Field label="Phone">
+          <Field label={t("deliveryApply.phone")}>
             <Input
               required
               value={form.phone}
@@ -205,7 +203,7 @@ function DeliveryApplyPage() {
               placeholder="+237 ..."
             />
           </Field>
-          <Field label="Base city">
+          <Field label={t("deliveryApply.city")}>
             <Input
               required
               value={form.city}
@@ -214,7 +212,7 @@ function DeliveryApplyPage() {
             />
           </Field>
           {form.applicant_type === "individual" ? (
-            <Field label="Vehicle type">
+            <Field label={t("deliveryApply.vehicleType")}>
               <Select
                 value={form.vehicle_type}
                 onValueChange={(value) => setForm({ ...form, vehicle_type: value })}
@@ -223,15 +221,15 @@ function DeliveryApplyPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bicycle">Bicycle</SelectItem>
-                  <SelectItem value="moto">Moto</SelectItem>
-                  <SelectItem value="car">Car</SelectItem>
-                  <SelectItem value="van">Van</SelectItem>
+                  <SelectItem value="bicycle">{t("deliveryApply.bicycle")}</SelectItem>
+                  <SelectItem value="moto">{t("deliveryApply.moto")}</SelectItem>
+                  <SelectItem value="car">{t("deliveryApply.car")}</SelectItem>
+                  <SelectItem value="van">{t("deliveryApply.van")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
           ) : (
-            <Field label="Fleet size">
+            <Field label={t("deliveryApply.fleetSize")}>
               <Input
                 required
                 type="number"
@@ -243,14 +241,14 @@ function DeliveryApplyPage() {
           )}
           {form.applicant_type === "company" && (
             <>
-              <Field label="Company name">
+              <Field label={t("deliveryApply.companyName")}>
                 <Input
                   required
                   value={form.company_name}
                   onChange={(e) => setForm({ ...form, company_name: e.target.value })}
                 />
               </Field>
-              <Field label="Registration number">
+              <Field label={t("deliveryApply.registrationNumber")}>
                 <Input
                   value={form.company_registration}
                   onChange={(e) => setForm({ ...form, company_registration: e.target.value })}
@@ -258,31 +256,31 @@ function DeliveryApplyPage() {
               </Field>
             </>
           )}
-          <Field label="Coverage zones">
+          <Field label={t("deliveryApply.coverageZones")}>
             <Input
               value={form.coverage_zones}
               onChange={(e) => setForm({ ...form, coverage_zones: e.target.value })}
               placeholder="Akwa, Bonamoussadi, Bastos"
             />
           </Field>
-          <Field label="Availability">
+          <Field label={t("deliveryApply.availability")}>
             <Input
               value={form.availability}
               onChange={(e) => setForm({ ...form, availability: e.target.value })}
-              placeholder="Weekdays, weekends, full-time"
+              placeholder={t("deliveryApply.availabilityPlaceholder")}
             />
           </Field>
           <div className="md:col-span-2">
-            <Field label="Experience">
+            <Field label={t("deliveryApply.experience")}>
               <Textarea
                 value={form.experience}
                 onChange={(e) => setForm({ ...form, experience: e.target.value })}
-                placeholder="Tell us about your delivery experience."
+                placeholder={t("deliveryApply.experiencePlaceholder")}
               />
             </Field>
           </div>
           <div className="md:col-span-2">
-            <Field label="Why should J-STORE approve you?">
+            <Field label={t("deliveryApply.motivation")}>
               <Textarea
                 value={form.motivation}
                 onChange={(e) => setForm({ ...form, motivation: e.target.value })}
@@ -292,15 +290,24 @@ function DeliveryApplyPage() {
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <FileInput label="ID document" capture="environment" file={idFile} onChange={setIdFile} />
           <FileInput
-            label="Licence / vehicle proof"
+            label={t("deliveryApply.idDocument")}
+            capture="environment"
+            file={idFile}
+            onChange={setIdFile}
+          />
+          <FileInput
+            label={t("deliveryApply.licenseProof")}
             capture="environment"
             file={licenseFile}
             onChange={setLicenseFile}
           />
           {form.applicant_type === "company" && (
-            <FileInput label="Company document" file={companyFile} onChange={setCompanyFile} />
+            <FileInput
+              label={t("deliveryApply.companyDocument")}
+              file={companyFile}
+              onChange={setCompanyFile}
+            />
           )}
         </div>
 
@@ -315,7 +322,7 @@ function DeliveryApplyPage() {
             ) : (
               <CheckCircle2 className="mr-2 h-4 w-4" />
             )}
-            Submit application
+            {t("deliveryApply.submit")}
           </Button>
         </div>
       </form>
@@ -345,6 +352,7 @@ function FileInput({
   capture?: "environment";
   onChange: (file: File | null) => void;
 }) {
+  const { t } = useI18n();
   const inputId = `file-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   return (
@@ -357,11 +365,11 @@ function FileInput({
           <Upload className="h-4 w-4 text-gold" /> {label}
         </span>
         <span className="mb-3 block text-xs text-muted-foreground">
-          Upload from files or use camera.
+          {t("deliveryApply.uploadInstruction")}
         </span>
 
         <span className="inline-flex rounded-full bg-navy px-4 py-2 text-xs font-semibold text-navy-foreground">
-          Choose file
+          {t("deliveryApply.chooseFile")}
         </span>
 
         {file && (

@@ -34,7 +34,7 @@ export type Product = {
   description: string;
 };
 
-const hues = [25, 45, 200, 220, 260, 320, 10, 160, 80, 340];
+const hues = [25, 45, 200, 220, 260, 320, 10, 45, 45, 340];
 const img = (i: number) => `hsl(${hues[i % hues.length]} 60% 55%)`;
 
 const names = [
@@ -307,7 +307,7 @@ const SCHOOL_ITEMS: Array<Omit<Product, "id" | "category" | "seller" | "image">>
   },
 ];
 
-const schoolHues = [25, 200, 45, 320, 160, 220, 10, 80, 260, 340, 0, 100];
+const schoolHues = [25, 200, 45, 320, 45, 220, 10, 45, 260, 340, 0, 45];
 SCHOOL_ITEMS.forEach((s, i) => {
   PRODUCTS.push({
     id: `school-${i + 1}`,

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -19,9 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
-export const Route = createFileRoute(
-  "/_authenticated/_admin/admin/seller-applications",
-)({
+export const Route = createFileRoute("/_authenticated/_admin/admin/seller-applications")({
   component: AdminSellerApplications,
   head: () => ({ meta: [{ title: "Seller applications — J-STORE.cm" }] }),
 });
@@ -56,7 +55,7 @@ type Note = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-  approved: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  approved: "bg-gold-500/15 text-gold-700 border-gold-500/30",
   rejected: "bg-destructive/15 text-destructive border-destructive/30",
   info_requested: "bg-blue-500/15 text-blue-600 border-blue-500/30",
 };
@@ -72,6 +71,7 @@ function docUrl(path: string | null) {
 }
 
 function AdminSellerApplications() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -126,12 +126,12 @@ function AdminSellerApplications() {
       // Notify applicant
       await supabase.from("notifications").insert({
         user_id: app.user_id,
-        title: "Seller application approved 🎉",
+        title: "Seller application approved",
         body: `Congratulations! Your store "${app.store_name}" has been approved. You can now list products.`,
       });
     },
     onSuccess: () => {
-      toast.success("Application approved — seller role granted");
+      toast.success(t("roles.application_approved_toast"));
       qc.invalidateQueries({ queryKey: ["admin-seller-applications"] });
       qc.invalidateQueries({ queryKey: ["admin-roles"] });
     },
@@ -161,7 +161,7 @@ function AdminSellerApplications() {
       });
     },
     onSuccess: () => {
-      toast.success("Application rejected");
+      toast.success(t("roles.application_rejected"));
       setRejectReason("");
       qc.invalidateQueries({ queryKey: ["admin-seller-applications"] });
     },
@@ -183,11 +183,13 @@ function AdminSellerApplications() {
       await supabase.from("notifications").insert({
         user_id: app.user_id,
         title: "More info needed for your application",
-        body: message.trim() || `We need additional information for your store "${app.store_name}". Please update your application.`,
+        body:
+          message.trim() ||
+          `We need additional information for your store "${app.store_name}". Please update your application.`,
       });
     },
     onSuccess: () => {
-      toast.success("Info request sent to applicant");
+      toast.success(t("roles.info_request_sent_to_applicant"));
       qc.invalidateQueries({ queryKey: ["admin-seller-applications"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -204,7 +206,7 @@ function AdminSellerApplications() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      toast.success("Note saved");
+      toast.success(t("roles.note_saved"));
       setNoteBody((prev) => ({ ...prev, [v.appId]: "" }));
       qc.invalidateQueries({ queryKey: ["admin-seller-app-notes"] });
     },
@@ -215,7 +217,7 @@ function AdminSellerApplications() {
   const pendingCount = applications.filter((a) => a.status === "pending").length;
 
   return (
-    <div className="mx-auto max-w-[1536px] px-6 py-10">
+    <div className="mx-auto max-w-384 px-6 py-10">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
         <div className="flex items-center gap-3">
@@ -223,13 +225,17 @@ function AdminSellerApplications() {
             <ClipboardList className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">Admin</p>
-            <h1 className="font-display text-3xl md:text-4xl font-bold">Seller applications</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">
+              {t("roles.admin")}
+            </p>
+            <h1 className="font-display text-3xl md:text-4xl font-bold">
+              {t("roles.seller_applications")}
+            </h1>
           </div>
         </div>
         {pendingCount > 0 && (
           <Badge className="bg-amber-500 text-white text-sm px-3 py-1">
-            {pendingCount} pending
+            {t("roles.pending_count", { count: pendingCount })}
           </Badge>
         )}
       </div>
@@ -246,7 +252,7 @@ function AdminSellerApplications() {
                 : "border-border hover:border-gold/40"
             }`}
           >
-            {f === "all" ? "All" : statusLabel(f)}
+            {f === "all" ? t("roles.all") : statusLabel(f)}
             {f === "pending" && pendingCount > 0 && (
               <span className="ml-1.5 bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">
                 {pendingCount}
@@ -263,7 +269,7 @@ function AdminSellerApplications() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <p className="text-muted-foreground">No applications in this category.</p>
+          <p className="text-muted-foreground">{t("roles.no_applications_in_this_category")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -299,7 +305,7 @@ function AdminSellerApplications() {
                     </Badge>
                     {appNotes.length > 0 && (
                       <span className="text-xs text-muted-foreground shrink-0">
-                        {appNotes.length} note{appNotes.length > 1 ? "s" : ""}
+                        {t("roles.notes_count", { count: appNotes.length })}
                       </span>
                     )}
                   </div>
@@ -315,16 +321,20 @@ function AdminSellerApplications() {
                   <div className="border-t border-border p-5 space-y-6">
                     {/* Application fields */}
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                      <Detail label="Business name" value={app.store_name} />
-                      <Detail label="Business type" value={app.business_type} />
-                      <Detail label="Owner" value={app.owner_name} />
-                      <Detail label="Phone" value={app.phone} />
-                      <Detail label="Email" value={app.email} />
-                      <Detail label="City" value={app.city} />
-                      <Detail label="Tax ID" value={app.tax_id} />
-                      <Detail label="User ID" value={app.user_id} mono />
+                      <Detail label={t("roles.business_name")} value={app.store_name} />
+                      <Detail label={t("roles.business_type")} value={app.business_type} />
+                      <Detail label={t("roles.owner")} value={app.owner_name} />
+                      <Detail label={t("roles.phone")} value={app.phone} />
+                      <Detail label={t("roles.email")} value={app.email} />
+                      <Detail label={t("roles.city")} value={app.city} />
+                      <Detail label={t("roles.tax_id")} value={app.tax_id} />
+                      <Detail label={t("roles.user_id")} value={app.user_id} mono />
                       {app.rejection_reason && (
-                        <Detail label="Rejection reason" value={app.rejection_reason} className="sm:col-span-2 lg:col-span-3 text-destructive" />
+                        <Detail
+                          label={t("roles.rejection_reason")}
+                          value={app.rejection_reason}
+                          className="sm:col-span-2 lg:col-span-3 text-destructive"
+                        />
                       )}
                     </div>
 
@@ -337,7 +347,7 @@ function AdminSellerApplications() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-border text-sm hover:border-gold/60 transition-colors"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" /> ID document
+                          <ExternalLink className="h-3.5 w-3.5" /> {t("roles.id_document")}
                         </a>
                       )}
                       {bizUrl && (
@@ -347,7 +357,8 @@ function AdminSellerApplications() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-border text-sm hover:border-gold/60 transition-colors"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" /> Business registration
+                          <ExternalLink className="h-3.5 w-3.5" />{" "}
+                          {t("roles.business_registration")}
                         </a>
                       )}
                     </div>
@@ -355,15 +366,12 @@ function AdminSellerApplications() {
                     {/* Internal notes */}
                     <div className="space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Internal notes
+                        {t("roles.internal_notes")}
                       </p>
                       {appNotes.length > 0 ? (
                         <ul className="space-y-2">
                           {appNotes.map((n) => (
-                            <li
-                              key={n.id}
-                              className="bg-muted/40 rounded-xl px-4 py-3 text-sm"
-                            >
+                            <li key={n.id} className="bg-muted/40 rounded-xl px-4 py-3 text-sm">
                               <p>{n.body}</p>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {new Date(n.created_at).toLocaleString()}
@@ -372,26 +380,22 @@ function AdminSellerApplications() {
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No notes yet.</p>
+                        <p className="text-sm text-muted-foreground">{t("roles.no_notes_yet")}</p>
                       )}
                       <div className="flex gap-2">
                         <Textarea
-                          placeholder="Add a private note…"
+                          placeholder={t("roles.add_a_private_note")}
                           rows={2}
                           className="text-sm resize-none"
                           value={noteBody[app.id] ?? ""}
-                          onChange={(e) =>
-                            setNoteBody((p) => ({ ...p, [app.id]: e.target.value }))
-                          }
+                          onChange={(e) => setNoteBody((p) => ({ ...p, [app.id]: e.target.value }))}
                         />
                         <Button
                           size="sm"
                           variant="outline"
                           className="rounded-full shrink-0 self-end"
                           disabled={!noteBody[app.id]?.trim() || addNote.isPending}
-                          onClick={() =>
-                            addNote.mutate({ appId: app.id, body: noteBody[app.id] })
-                          }
+                          onClick={() => addNote.mutate({ appId: app.id, body: noteBody[app.id] })}
                         >
                           <MessageSquarePlus className="h-4 w-4" />
                         </Button>
@@ -404,7 +408,7 @@ function AdminSellerApplications() {
                         {/* Request info */}
                         <div className="flex gap-2">
                           <Textarea
-                            placeholder="Request more info — describe what's needed (optional message to applicant)…"
+                            placeholder={t("roles.request_more_info_prompt")}
                             rows={2}
                             className="text-sm resize-none"
                             value={noteBody[`req-${app.id}`] ?? ""}
@@ -424,7 +428,7 @@ function AdminSellerApplications() {
                               })
                             }
                           >
-                            <Send className="h-4 w-4 mr-1" /> Request info
+                            <Send className="h-4 w-4 mr-1" /> {t("roles.request_info")}
                           </Button>
                         </div>
 
@@ -432,7 +436,7 @@ function AdminSellerApplications() {
                         <div className="flex gap-2">
                           <input
                             className="flex-1 h-10 rounded-lg px-3 bg-secondary border border-transparent focus:outline-none focus:border-destructive text-sm"
-                            placeholder="Rejection reason (optional)…"
+                            placeholder={t("roles.rejection_reason_optional_prompt")}
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                           />
@@ -443,24 +447,22 @@ function AdminSellerApplications() {
                             disabled={reject.isPending}
                             onClick={() => reject.mutate({ app, reason: rejectReason })}
                           >
-                            <XCircle className="h-4 w-4 mr-1" /> Reject
+                            <XCircle className="h-4 w-4 mr-1" /> {t("roles.reject")}
                           </Button>
                           <Button
                             size="sm"
-                            className="rounded-full shrink-0 bg-emerald text-emerald-foreground hover:bg-emerald/90"
+                            className="rounded-full shrink-0 bg-gold text-gold-foreground hover:bg-gold/90"
                             disabled={approve.isPending}
                             onClick={() => approve.mutate(app)}
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                            <CheckCircle2 className="h-4 w-4 mr-1" /> {t("roles.approve")}
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground pt-2 border-t border-border">
-                        Reviewed{" "}
-                        {app.reviewed_at
-                          ? new Date(app.reviewed_at).toLocaleString()
-                          : ""}
+                        {t("roles.reviewed")}{" "}
+                        {app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ""}
                       </p>
                     )}
                   </div>

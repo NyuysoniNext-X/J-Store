@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/payment-return")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -25,6 +26,7 @@ const POLL_MS = 3000;
 const GIVE_UP_MS = 3 * 60 * 1000;
 
 function PaymentReturn() {
+  const { t } = useI18n();
   const { group } = Route.useSearch();
   const nav = useNavigate();
   const clear = useCart((s) => s.clear);
@@ -81,22 +83,20 @@ function PaymentReturn() {
       {failed ? (
         <>
           <XCircle className="h-14 w-14 mx-auto text-destructive" />
-          <h1 className="font-display text-2xl font-bold">Payment not completed</h1>
+          <h1 className="font-display text-2xl font-bold">{t("payment.notCompleted")}</h1>
           <p className="text-sm text-muted-foreground">
-            {state.reason ?? "The payment was cancelled or declined."} No money was taken, or any
-            amount taken will be refunded by your provider. You can try again.
+            {state.reason ?? t("payment.cancelledDeclined")} {t("payment.refundNotice")}
           </p>
           <Button asChild className="rounded-full">
-            <Link to="/checkout">Back to checkout</Link>
+            <Link to="/checkout">{t("payment.backToCheckout")}</Link>
           </Button>
         </>
       ) : timedOut ? (
         <>
           <Clock className="h-14 w-14 mx-auto text-amber-500" />
-          <h1 className="font-display text-2xl font-bold">Still waiting for confirmation</h1>
+          <h1 className="font-display text-2xl font-bold">{t("payment.waiting")}</h1>
           <p className="text-sm text-muted-foreground">
-            We have not received the confirmation yet. If you approved the payment on your phone,
-            your order will be confirmed automatically in a few minutes. You can also check again.
+            {t("payment.notReceivedYet")}
           </p>
           <div className="flex justify-center gap-3">
             <Button
@@ -107,24 +107,23 @@ function PaymentReturn() {
                 void check();
               }}
             >
-              Check again
+              {t("payment.checkAgain")}
             </Button>
             <Button asChild variant="outline" className="rounded-full">
-              <Link to="/orders">My orders</Link>
+              <Link to="/orders">{t("payment.myOrders")}</Link>
             </Button>
           </div>
         </>
       ) : (
         <>
           {state.status === "successful" ? (
-            <CheckCircle2 className="h-14 w-14 mx-auto text-emerald-500" />
+            <CheckCircle2 className="h-14 w-14 mx-auto text-gold-600" />
           ) : (
             <Loader2 className="h-14 w-14 mx-auto animate-spin text-gold" />
           )}
-          <h1 className="font-display text-2xl font-bold">Confirming your payment…</h1>
+          <h1 className="font-display text-2xl font-bold">{t("payment.confirming")}</h1>
           <p className="text-sm text-muted-foreground">
-            Check your phone and approve the payment request with your PIN. This page updates
-            automatically — please don't close it.
+            {t("payment.approvePrompt")}
           </p>
         </>
       )}

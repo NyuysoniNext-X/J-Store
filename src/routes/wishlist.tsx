@@ -4,6 +4,7 @@ import { useWishlist } from "@/lib/store";
 import { useProducts } from "@/lib/queries";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/wishlist")({
   component: WishlistPage,
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/wishlist")({
 });
 
 function WishlistPage() {
+  const { t } = useI18n();
   const ids = useWishlist((s) => s.ids);
   const { data: allProducts = [], isLoading } = useProducts();
   const items = allProducts.filter((p) => ids.includes(p.id));
@@ -18,7 +20,9 @@ function WishlistPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-384 px-6 py-10">
-        <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Your wishlist</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">
+          {t("product.wishlist")}
+        </h1>
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-gold" />
         </div>
@@ -28,19 +32,21 @@ function WishlistPage() {
 
   return (
     <div className="mx-auto max-w-384 px-6 py-10">
-      <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Your wishlist</h1>
+      <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">
+        {t("product.wishlist")}
+      </h1>
       {items.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl">
           <Heart className="h-12 w-12 text-gold mx-auto mb-4" />
-          <p className="font-display text-xl">No saved items yet</p>
+          <p className="font-display text-xl">{t("wishlist.empty")}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Tap the heart on any product to save it for later.
+            {t("wishlist.saveHint")}
           </p>
           <Button
             asChild
             className="mt-6 rounded-full bg-navy text-navy-foreground hover:bg-gold hover:text-gold-foreground"
           >
-            <Link to="/shop">Explore products</Link>
+            <Link to="/shop">{t("wishlist.explore")}</Link>
           </Button>
         </div>
       ) : (

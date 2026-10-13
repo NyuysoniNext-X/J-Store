@@ -83,7 +83,7 @@ export function SearchBox({
               setOpen(false);
             }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label="Clear search"
+            aria-label={t("common.clearSearch")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -117,7 +117,7 @@ export function SearchBox({
             onClick={() => goToShop(value.trim())}
             className="w-full text-left px-4 py-2.5 text-sm font-medium text-gold hover:bg-secondary transition-colors border-t border-border"
           >
-            See all results for "{value.trim()}"
+            {t("common.seeAllResults")} "{value.trim()}"
           </button>
         </div>
       )}

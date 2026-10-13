@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/_super_admin/super-admin/d
 });
 
 function SuperAdminDashboard() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: roles = [] } = useQuery({
@@ -120,8 +122,12 @@ function SuperAdminDashboard() {
           <Crown className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">Super admin</p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold">Platform control</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-gold font-semibold">
+            {t("roles.super_admin")}
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl font-bold">
+            {t("roles.platform_control")}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Owner-only view across the entire platform.
           </p>
@@ -143,8 +149,8 @@ function SuperAdminDashboard() {
 
       <Tabs defaultValue="actions" className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="actions">Control center</TabsTrigger>
-          <TabsTrigger value="delivery">Delivery applications</TabsTrigger>
+          <TabsTrigger value="actions">{t("roles.control_center")}</TabsTrigger>
+          <TabsTrigger value="delivery">{t("roles.delivery_applications")}</TabsTrigger>
         </TabsList>
         <TabsContent value="actions" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Link
@@ -152,7 +158,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Shield className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Admin dashboard</h3>
+            <h3 className="font-display font-semibold">{t("roles.admin_dashboard")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Promote users to admin, revoke admin access, audit role grants.
             </p>
@@ -162,7 +168,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Users className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Seller applications</h3>
+            <h3 className="font-display font-semibold">{t("roles.seller_applications")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Review, approve or reject seller sign-up requests.
             </p>
@@ -172,7 +178,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Package className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Product approvals</h3>
+            <h3 className="font-display font-semibold">{t("roles.product_approvals")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Approve or reject seller product listings.
             </p>
@@ -182,7 +188,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Activity className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Payment verifications</h3>
+            <h3 className="font-display font-semibold">{t("roles.payment_verifications")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Confirm buyer MoMo transaction references.
             </p>
@@ -192,7 +198,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <ShoppingBag className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Withdrawal requests</h3>
+            <h3 className="font-display font-semibold">{t("roles.withdrawal_requests")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Process seller payout requests manually.
             </p>
@@ -202,7 +208,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Activity className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Seller boosts</h3>
+            <h3 className="font-display font-semibold">{t("roles.seller_boosts")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Set Featured, Top Seller, or Sponsored tiers.
             </p>
@@ -212,7 +218,7 @@ function SuperAdminDashboard() {
             className="bg-card border border-border rounded-2xl p-6 hover:border-gold/40 transition-colors"
           >
             <Activity className="h-6 w-6 text-gold mb-3" />
-            <h3 className="font-display font-semibold">Manage policies</h3>
+            <h3 className="font-display font-semibold">{t("roles.manage_policies")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Update legal documents and platform agreements.
             </p>
@@ -221,7 +227,9 @@ function SuperAdminDashboard() {
         <TabsContent value="delivery" className="rounded-3xl border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-semibold">Delivery applications</h2>
+              <h2 className="font-display text-xl font-semibold">
+                {t("roles.delivery_applications")}
+              </h2>
               <p className="text-sm text-muted-foreground">
                 Approve individual delivery partners and delivery companies.
               </p>
